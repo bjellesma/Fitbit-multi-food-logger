@@ -1,7 +1,23 @@
 import requests
 
-access_token = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyM1BLNzMiLCJzdWIiOiI4NFpKUE0iLCJpc3MiOiJGaXRiaXQiLCJ0eXAiOiJhY2Nlc3NfdG9rZW4iLCJzY29wZXMiOiJ3bnV0IiwiZXhwIjoxNzE4OTIyODg2LCJpYXQiOjE3MTg4OTQwODZ9.e02Z7jv9NtrtPNZRXsRW_y3udLr7cbpruk6AfMCyNMs'
-headers = {
+def load_token(file_path, osvar):
+    # osvar is used 
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    return os.getenv('CLIENTID') or None
+
+def save_token(file_path, token):
+    with open(file_path, 'w') as file:
+        json.dump(token, file)
+
+# load token data from json files
+access_token_data = load_token('access_token.json', 'ACCESSTOKEN')
+refresh_token_data = load_token('refresh_token.json', 'REFRESHTOKEN')
+
+# load tokens
+access_token = access_token_data['access_token']
+refresh_token = refresh_token_data['refresh_token']headers = {
     'Authorization': f'Bearer {access_token}'
 }
 
@@ -13,7 +29,6 @@ response = requests.get(
 
 if response.status_code == 200:
     units = response.json()
-    print(f"Available Measurement Units: {units}")
     for unit in units:
         print(f"Unit ID: {unit['id']} - Name: {unit['name']} - Plural: {unit['plural']}")
 else:
