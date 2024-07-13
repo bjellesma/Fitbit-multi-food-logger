@@ -3,7 +3,7 @@ import json
 import os
 import base64
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # get env variables
 load_dotenv()
@@ -68,14 +68,24 @@ def create_food(entry, access_token=access_token):
         }
     )
 
-# Get the current date in yyyy-MM-dd format
-current_date = datetime.now().strftime('%Y-%m-%d')
-
 food_entries = []
 # Prompt the user for meal and meal type, converting the input to integers
 meal = int(input("What do you want to add?\n 1=morning shake \n 2=oatmeal pie\n 3=Yogurt \n 4=Grapes/Carrots \n 5=Soylent \n 6=Granola \n 7=Preworkout \n 8=Post workout \n 9=Chicken and Pasta \n >"))
 meal_type = int(input("When did you eat this?\n 1=Breakfast \n 2=morning shake \n 3=Lunch\n 4=Afternoon Snack \n 5=Dinner \n >"))
 
+# prompt for date
+date_option = int(input("Select the date:\n 1=Today \n 2=Yesterday \n 3=Two days ago \n 4=Three days ago \n >"))
+if date_option == 1:
+    current_date = datetime.now().strftime('%Y-%m-%d')
+elif date_option == 2:
+    current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+elif date_option == 3:
+    current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+elif date_option == 4:
+    current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+else:
+    print("Invalid option, defaulting to today.")
+    current_date = datetime.now().strftime('%Y-%m-%d')
 # Define the meals in a dictionary
 meals = {
     1: [
@@ -131,6 +141,14 @@ meals = {
             "amount": 1,
             "date": current_date  # Use the current date
         },
+        {
+            "name": 'blueberries',
+            "foodId": 82547,
+            "mealTypeId": meal_type,
+            "unitId": 91,    # Cups
+            "amount": .33,
+            "date": current_date  # Use the current date
+        }
     ],
     4: [
         {
@@ -169,6 +187,14 @@ meals = {
             "amount": 1,
             "date": current_date  # Use the current date
         },
+        {
+            "name": 'Banana',
+            "foodId": 8100,
+            "mealTypeId": meal_type,
+            "unitId": 147,    # Bar
+            "amount": 1,
+            "date": current_date  # Use the current date
+        }
     ],
     7: [
         {
