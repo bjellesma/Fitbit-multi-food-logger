@@ -1,3 +1,4 @@
 .env
 access_token.json
 refresh_token.json
+frontend/node_modules/

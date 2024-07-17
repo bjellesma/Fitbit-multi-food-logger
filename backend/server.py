@@ -62,6 +62,7 @@ def log_food():
     global access_token, refresh_token
     # todo is this coming from the request body
     entry = request.json
+    print(f'req: {request.json}')
     response = requests.post(
         f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}",
         headers={
