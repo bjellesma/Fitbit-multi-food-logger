@@ -1,0 +1,131 @@
+{
+    "1": [
+        {
+            "name": "Protein Shake",
+            "foodId": 22788636,
+            "unitId": 301,
+            "amount": 2
+        },
+        {
+            "name": "Milk (1%)",
+            "foodId": 692771571,
+            "unitId": 91,
+            "amount": 2
+        }
+    ],
+    "2": [
+        {
+            "name": "Oatmeal",
+            "foodId": 692777712,
+            "unitId": 229,
+            "amount": 2
+        },
+        {
+            "name": "Raisins",
+            "foodId": 692772145,
+            "unitId": 91,
+            "amount": 0.5
+        },
+        {
+            "name": "Unsweetened Applesauce",
+            "foodId": 692772244,
+            "unitId": 91,
+            "amount": 1.5
+        }
+    ],
+    "3": [
+        {
+            "name": "Zero Sugar Yogurt",
+            "foodId": 804204232,
+            "unitId": 69,
+            "amount": 1        },
+        {
+            "name": "blueberries",
+            "foodId": 82547,
+            "unitId": 91,
+            "amount": 0.33        }
+    ],
+    "4": [
+        {
+            "name": "Grapes",
+            "foodId": 751876808,
+            "unitId": 148,
+            "amount": 15        },
+        {
+            "name": "Carrots",
+            "foodId": 784706037,
+            "unitId": 226,
+            "amount": 6
+        }
+    ],
+    "5": [
+        {
+            "name": "Soylent",
+            "foodId": 761395165,
+            "unitId": 27,
+            "amount": 1
+        }
+    ],
+    "6": [
+        {
+            "name": "Protein Bar",
+            "foodId": 725735405,
+            "unitId": 17,
+            "amount": 1
+        },
+        {
+            "name": "Banana",
+            "foodId": 8100,
+            "unitId": 147,
+            "amount": 1
+        }
+    ],
+    "7": [
+        {
+            "name": "Pre Workout",
+            "foodId": 798698937,
+            "unitId": 301,
+            "amount": 1
+        }
+    ],
+    "8": [
+        {
+            "name": "Protein Shake",
+            "foodId": 22788636,
+            "unitId": 301,
+            "amount": 1
+        }
+    ],
+    "9": [
+        {
+            "name": "Protein Pasta",
+            "foodId": 778450458,
+            "unitId": 226,
+            "amount": 3
+        },
+        {
+            "name": "Chicken",
+            "foodId": 787982016,
+            "unitId": 226,
+            "amount": 6
+        },
+        {
+            "name": "Meat Sauce",
+            "foodId": 82544,
+            "unitId": 91,
+            "amount": 1
+        },
+        {
+            "name": "Parmasean Cheese",
+            "foodId": 752199077,
+            "unitId": 364,
+            "amount": 5
+        },
+        {
+            "name": "Brocolli",
+            "foodId": 82945,
+            "unitId": 304,
+            "amount": 1
+        }
+    ]
+}
