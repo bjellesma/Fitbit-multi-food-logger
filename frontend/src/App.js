@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import DatePicker from './Components/DatePicker';
 
 function App() {
   const [meal, setMeal] = useState('');
   const [mealType, setMealType] = useState('');
-  const [dateOption, setDateOption] = useState('');
+  const [dateOption] = useState('');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -44,49 +45,50 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <h1>Log Food Entry</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          What do you want to add?
-          <select value={meal} onChange={(e) => setMeal(e.target.value)}>
-            <option value="">Select a meal</option>
-            <option value="1">morning shake</option>
-            <option value="2">oatmeal pie</option>
-            <option value="3">Yogurt</option>
-            <option value="4">Grapes/Carrots</option>
-            <option value="5">Soylent</option>
-            <option value="6">Granola</option>
-            <option value="7">Preworkout</option>
-            <option value="8">Post workout</option>
-            <option value="9">Chicken and Pasta</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          When did you eat this?
-          <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
-            <option value="">Select meal type</option>
-            <option value="1">Breakfast</option>
-            <option value="2">Morning Snack</option>
-            <option value="3">Lunch</option>
-            <option value="4">Afternoon Snack</option>
-            <option value="5">Dinner</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          Select the date:
-          <select value={dateOption} onChange={(e) => setDateOption(e.target.value)}>
-            <option value="">Select date</option>
-            <option value="1">Today</option>
-            <option value="2">Yesterday</option>
-            <option value="3">Two days ago</option>
-            <option value="4">Three days ago</option>
-          </select>
-        </label>
-        <br />
-        <button type="submit">Log Food</button>
+    <div className="App container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Log Food Entry</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col">
+          <label className="font-semibold">
+            What do you want to add?
+            <select className="mt-1 p-2 border border-gray-300 rounded" value={meal} onChange={(e) => setMeal(e.target.value)}>
+              <option value="">Select a meal</option>
+              <option value="1">morning shake</option>
+              <option value="2">oatmeal pie</option>
+              <option value="3">Yogurt</option>
+              <option value="4">Grapes/Carrots</option>
+              <option value="5">Soylent</option>
+              <option value="6">Granola</option>
+              <option value="7">Preworkout</option>
+              <option value="8">Post workout</option>
+              <option value="9">Chicken and Pasta</option>
+            </select>
+          </label>
+        </div>
+        <div className="flex flex-col">
+          <label className="font-semibold">
+            When did you eat this?
+            <select className="mt-1 p-2 border border-gray-300 rounded" value={mealType} onChange={(e) => setMealType(e.target.value)}>
+              <option value="">Select meal type</option>
+              <option value="1">Breakfast</option>
+              <option value="2">Morning Snack</option>
+              <option value="3">Lunch</option>
+              <option value="4">Afternoon Snack</option>
+              <option value="5">Dinner</option>
+            </select>
+          </label>
+        </div>
+        <div className="flex flex-col">
+          <label className="font-semibold">
+            <div>
+              <h1 className="text-xl font-bold">Select a Date</h1>
+              <DatePicker />
+            </div>
+          </label>
+        </div>
+        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Log Food
+        </button>
       </form>
     </div>
   );
