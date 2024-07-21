@@ -61,6 +61,39 @@ def refresh_access_token(refresh_token):
     else:
         return None, None
 
+def make_api_request(url, method='get', headers=None, data=None, params=None):
+    """
+    Makes an API request and refreshes the token if necessary.
+    """
+    global access_token, refresh_token
+    if not headers:
+        headers = {}
+    headers['Authorization'] = f'Bearer {access_token}'
+
+    if method.lower() == 'get':
+        response = requests.get(url, headers=headers, params=params)
+    elif method.lower() == 'post':
+        response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 401:  # Token expired
+        access_token, refresh_token = refresh_access_token(refresh_token)
+        if not access_token or not refresh_token:
+            return {'error': 'Failed to refresh token.'}, 401
+
+        headers['Authorization'] = f'Bearer {access_token}'
+        if method.lower() == 'get':
+            response = requests.get(url, headers=headers, params=params)
+        elif method.lower() == 'post':
+            response = requests.post(url, headers=headers, json=data)
+
+    return response.json(), response.status_code
+
+@app.route('/api/searchfoods/<query>', methods=['GET'])
+def search_foods(query):
+    url = f'https://api.fitbit.com/1/foods/search.json?query={query}'
+    response, status_code = make_api_request(url)
+    return jsonify(response), status_code
+
 @app.route('/api/getmeal/<meal_id>', methods=['GET'])
 def get_meal(meal_id):
     meal_id_str = str(meal_id)
@@ -70,54 +103,22 @@ def get_meal(meal_id):
         return jsonify({'error': 'Meal not found'}), 404
 
 @app.route('/api/foodLogs/<date>', methods=['GET'])
-def get_food_logs(date, data="summary"):
-    data = request.args.get("data") or data
-    global access_token, refresh_token
-    response = requests.get(
-        f"https://api.fitbit.com/1/user/-/foods/log/date/{date}.json",
-        headers={
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
-        }
-    )
-    res = response.json()
+def get_food_logs(date):
+    data = request.args.get("data", "summary")
+    url = f"https://api.fitbit.com/1/user/-/foods/log/date/{date}.json"
+    response, status_code = make_api_request(url)
     if data == "summary":
-        return jsonify(res.get('summary'),{}), response.status_code
-    return jsonify(response.json()), response.status_code
+        return jsonify(response.get('summary', {})), status_code
+    return jsonify(response), status_code
 
 @app.route('/api/log_food', methods=['POST'])
 def log_food():
-    global access_token, refresh_token
-    # todo is this coming from the request body
     entries = request.json
-    print(f'req: {request.json}')
     for entry in entries:
-        response = requests.post(
-            f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}",
-            headers={
-                'Authorization': f'Bearer {access_token}',
-                'Content-Type': 'application/json'
-            }
-        )
-        # if token is expired, refresh it and try again
-        if response.status_code == 401:
-            access_token, refresh_token = refresh_access_token(refresh_token)
-            if access_token and refresh_token:
-                response = requests.post(
-                    f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}",
-                    headers={
-                        'Authorization': f'Bearer {access_token}',
-                        'Content-Type': 'application/json'
-                    }
-                )
-                if response.status_code == 201:
-                    return jsonify({'message': f"Logged food {entry['name']} successfully after refreshing token."}), 201
-                else:
-                    return jsonify({'error': response.json()}), response.status_code
-            else:
-                return jsonify({'error': 'Failed to refresh token.'}), 401
-        else:
-            return jsonify({'error': response.json()}), response.status_code
+        url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}"
+        response, status_code = make_api_request(url, method='post')
+        if status_code != 201:
+            return jsonify({'error': response}), status_code
     return jsonify({'message': 'Logged food successfully.'}), 201
 
 if __name__ == '__main__':

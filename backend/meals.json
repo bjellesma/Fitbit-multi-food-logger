@@ -4,27 +4,21 @@
             "name": "Protein Shake",
             "foodId": 22788636,
             "unitId": 301,
-            "amount": 2
-        },
-        {
-            "name": "Milk (1%)",
-            "foodId": 692771571,
-            "unitId": 91,
-            "amount": 2
+            "amount": 1
         }
     ],
     "2": [
         {
             "name": "Oatmeal",
-            "foodId": 692777712,
-            "unitId": 229,
-            "amount": 2
+            "foodId": 692777597,
+            "unitId": 91,
+            "amount": 0.5
         },
         {
             "name": "Raisins",
             "foodId": 692772145,
             "unitId": 91,
-            "amount": 0.5
+            "amount": 0.25
         },
         {
             "name": "Unsweetened Applesauce",
@@ -35,10 +29,10 @@
     ],
     "3": [
         {
-            "name": "Zero Sugar Yogurt",
-            "foodId": 804204232,
+            "name": "Oikos Pro Greek Yogurt",
+            "foodId": 737928281,
             "unitId": 69,
-            "amount": 1        },
+            "amount": 0.75        },
         {
             "name": "blueberries",
             "foodId": 82547,
@@ -75,9 +69,9 @@
         },
         {
             "name": "Banana",
-            "foodId": 8100,
+            "foodId": 81000,
             "unitId": 147,
-            "amount": 1
+            "amount": 100
         }
     ],
     "7": [
@@ -110,12 +104,6 @@
             "amount": 6
         },
         {
-            "name": "Meat Sauce",
-            "foodId": 82544,
-            "unitId": 91,
-            "amount": 1
-        },
-        {
             "name": "Parmasean Cheese",
             "foodId": 752199077,
             "unitId": 364,
@@ -126,6 +114,44 @@
             "foodId": 82945,
             "unitId": 304,
             "amount": 1
+        }
+    ],
+    "10": [
+        {
+            "name": "Protein Shake",
+            "foodId": 22788636,
+            "unitId": 301,
+            "amount": 1
+        },
+        {
+            "name": "Milk (1%)",
+            "foodId": 692771571,
+            "unitId": 91,
+            "amount": 2
+        }
+    ],
+    "11": [
+        {
+            "name": "Kind Granola",
+            "foodId": 767757700,
+            "unitId": 91,
+            "amount": 0.67
+        }
+    ],
+    "12": [
+        {
+            "name": "Unsalted nuts",
+            "foodId": 790826899,
+            "unitId": 91,
+            "amount": 0.25
+        }
+    ],
+    "13": [
+        {
+            "name": "Celsius Energy Drink",
+            "foodId": 789582825,
+            "unitId": 128,
+            "amount": 12
         }
     ]
 }
