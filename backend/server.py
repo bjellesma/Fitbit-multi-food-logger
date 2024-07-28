@@ -104,7 +104,7 @@ def get_meal(meal_id):
 
 @app.route('/api/foodLogs/<date>', methods=['GET'])
 def get_food_logs(date):
-    data = request.args.get("data", "summary")
+    data = request.args.get("data")
     url = f"https://api.fitbit.com/1/user/-/foods/log/date/{date}.json"
     response, status_code = make_api_request(url)
     if data == "summary":

@@ -2,7 +2,7 @@
     "1": [
         {
             "name": "Protein Shake",
-            "foodId": 22788636,
+            "foodId": 721603123,
             "unitId": 301,
             "amount": 1
         }
@@ -85,7 +85,7 @@
     "8": [
         {
             "name": "Protein Shake",
-            "foodId": 22788636,
+            "foodId": 721603123,
             "unitId": 301,
             "amount": 1
         }
@@ -118,8 +118,8 @@
     ],
     "10": [
         {
-            "name": "Protein Shake",
-            "foodId": 22788636,
+            "name": "Casein Protein Shake",
+            "foodId": 807556543,
             "unitId": 301,
             "amount": 1
         },
@@ -144,6 +144,12 @@
             "foodId": 790826899,
             "unitId": 91,
             "amount": 0.25
+        },
+        {
+            "name": "Banana",
+            "foodId": 81000,
+            "unitId": 147,
+            "amount": 100
         }
     ],
     "13": [
