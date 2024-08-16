@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from '../DatePicker';
+import FoodLogTable from '../FoodLogTable';
+import FoodLogSummary from '../FoodLogSummary';
+
+// Function to format date as YYYY-MM-DD
+const getFormattedDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 function LogFood() {
   const [foodLogs, setFoodLogs] = useState(null);
@@ -8,15 +19,17 @@ function LogFood() {
   const [meal, setMeal] = useState('');
   const [mealType, setMealType] = useState('');
   const [mealDetails, setMealDetails] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
+  // default to today's date
+  const [selectedDate, setSelectedDate] = useState(getFormattedDate());
 
   useEffect(() => {
     const fetchTodaysFoodLogs = async () => {
       const date = selectedDate;
-      console.log(date);
+      
       try {
-        const response = await axios.get(`http://localhost:5000/api/foodLogs/${date}?data=summary`);
+        const response = await axios.get(`http://localhost:5000/api/foodLogs/${date}`);
         setFoodLogs(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error('Failed to fetch today\'s food logs:', error);
       }
@@ -59,15 +72,29 @@ function LogFood() {
       date: selectedDate
     }));
 
+    // log the food entries
     try {
       const response = await axios.post('http://localhost:5000/api/log_food', foodEntries);
       console.log(response.data);
+      // request status is used to display a success or error message
       setRequestStatus(response.status);
+
+      // Update the foodLogs state with the new entry
+      setFoodLogs(prevLogs => {
+        if (prevLogs && prevLogs.foods) {
+          return {
+            ...prevLogs,
+            // attempt to merge the new food logs with the existing ones
+            foods: [...prevLogs.foods, ...response.data.food] // Assuming response.data.foods contains the new food logs
+          };
+        } else {
+          return response.data;
+        }
+      });
     } catch (error) {
       console.error(error.response.data.error);
     }
   };
-
   return (
     <>
         {/* green if request was good and red otherwise */}
@@ -84,20 +111,6 @@ function LogFood() {
             </div>
             )
         ) : null}
-        {/* display log for the currently selected day */}
-        {/* todo not working */}
-        {/* {foodLogs && (
-            <div className="food-logs">
-            <h2>Today's Food Logs</h2>
-            {foodLogs.map((log, index) => (
-                <div key={index}>
-                {Object.entries(log).map(([key, value]) => (
-                    <p key={key}><strong>{key}:</strong> {value}</p>
-                ))}
-                </div>
-            ))}
-            </div>
-        )} */}
         <div className="App container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Log Food Entry</h1>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,6 +132,7 @@ function LogFood() {
                     <option value="11">Kind Granola</option>
                     <option value="12">Unsalted Nuts</option>
                     <option value="13">Celsius</option>
+                    <option value="14">Celery and Peanut Butter</option>
                 </select>
                 </label>
             </div>
@@ -158,6 +172,8 @@ function LogFood() {
                 Log Food
             </button>
             </form>
+            <FoodLogSummary foodLogs={foodLogs} />
+            <FoodLogTable foodLogs={foodLogs} />
         </div>
       </>
   );

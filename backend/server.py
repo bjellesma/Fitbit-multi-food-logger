@@ -114,12 +114,14 @@ def get_food_logs(date):
 @app.route('/api/log_food', methods=['POST'])
 def log_food():
     entries = request.json
+    food_logs = []
     for entry in entries:
         url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}"
         response, status_code = make_api_request(url, method='post')
         if status_code != 201:
             return jsonify({'error': response}), status_code
-    return jsonify({'message': 'Logged food successfully.'}), 201
+        food_logs.append(response['foodLog'])
+    return jsonify({'message': 'Logged food successfully.', 'food': food_logs}), 201
 
 if __name__ == '__main__':
     app.run(debug=True)
