@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from collections import defaultdict
 import requests
 import json
 import os
@@ -6,7 +7,7 @@ import base64
 from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import datetime, timedelta
-
+import time
 app = Flask(__name__)
 CORS(app)
 
@@ -46,7 +47,8 @@ def refresh_access_token(refresh_token):
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
         'client_id': client_id,
-        'client_secret': client_secret
+        'client_secret': client_secret,
+        'scope': 'activity nutrition heartrate location nutrition profile settings sleep social weight',
     }
     headers = {
         'Authorization': f'Basic {basic_token}',
@@ -137,6 +139,74 @@ def delete_food(log_id):
     if status_code != 204: 
         return jsonify({'error': 'Unable to delete food'}), status_code
     return jsonify({'message': 'Deleted food successfully.'}), 201
+
+
+@app.route('/api/activity', methods=['GET'])
+def get_activity():
+    start_time = time.time()  # Start time tracking
+    
+    before_date = request.args.get("before_date")
+    if not before_date:
+        raise Exception("Please provide the before_date parameter.")
+
+    # Fetch data from various endpoints
+    steps_start = time.time()
+    steps_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/steps/date/{before_date}/1y.json")
+    steps_duration = time.time() - steps_start
+    print(f"Time taken for steps data: {steps_duration:.4f} seconds")
+
+    activity_calories_start = time.time()
+    activity_calories_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/calories/date/{before_date}/1y.json")
+    activity_calories_duration = time.time() - activity_calories_start
+    print(f"Time taken for activity calories data: {activity_calories_duration:.4f} seconds")
+
+    minutes_very_active_start = time.time()
+    minutes_very_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/{before_date}/1y.json")
+    minutes_very_active_duration = time.time() - minutes_very_active_start
+    print(f"Time taken for very active minutes data: {minutes_very_active_duration:.4f} seconds")
+
+    minutes_fairly_active_start = time.time()
+    minutes_fairly_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/{before_date}/1y.json")
+    minutes_fairly_active_duration = time.time() - minutes_fairly_active_start
+    print(f"Time taken for fairly active minutes data: {minutes_fairly_active_duration:.4f} seconds")
+
+    # Parse the responses
+    parse_start = time.time()
+    steps_data = steps_response.get('activities-steps', [])
+    activity_calories_data = activity_calories_response.get('activities-calories', [])
+    minutes_very_active_data = minutes_very_active_response.get('activities-minutesVeryActive', [])
+    print(f'minutes_very_active_data: {minutes_very_active_data[-2]}')
+    minutes_fairly_active_data = minutes_fairly_active_response.get('activities-minutesFairlyActive', [])
+    print(f'minutesFairlyActive: {minutes_fairly_active_data[-2]}')
+    parse_duration = time.time() - parse_start
+    print(f"Time taken to parse the data: {parse_duration:.4f} seconds")
+
+    # Combine the data
+    combine_start = time.time()
+    combined_data = []
+    for i in range(len(steps_data)):
+        date = steps_data[i]['dateTime']
+        steps = int(steps_data[i]['value'])
+        activity_calories = int(activity_calories_data[i]['value'])
+        minutes_very_active = int(minutes_very_active_data[i]['value'])
+        minutes_fairly_active = int(minutes_fairly_active_data[i]['value'])
+
+        combined_data.append({
+            'dateTime': date,
+            'steps': steps,
+            'activityCalories': activity_calories,
+            'minutesFairlyActive': minutes_fairly_active,
+            'minutesVeryActive': minutes_very_active,
+        })
+    combine_duration = time.time() - combine_start
+    print(f"Time taken to combine the data: {combine_duration:.4f} seconds")
+
+    total_duration = time.time() - start_time  # End time tracking
+    print(f"Total time taken for the request: {total_duration:.4f} seconds")
+
+    return jsonify(combined_data), 200
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

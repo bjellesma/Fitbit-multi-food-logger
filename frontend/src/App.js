@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Link, Routes } from 'react-router-dom';
 import SearchFood from './Components/Pages/SearchFood';
 import LogFood from './Components/Pages/LogFood'; // Import the LogFood component
+import AnalyzeActivity from './Components/Pages/AnalyzeActivity';
 
 function App() {
   return (
@@ -15,14 +16,16 @@ function App() {
             <li>
               <Link to="/log-food" className="hover:bg-gray-700 p-2 rounded">Log Food</Link>
             </li>
-            {/* Add other menu items here */}
+            <li>
+              <Link to="/analyze-activity" className="hover:bg-gray-700 p-2 rounded">Analyze Activity</Link>
+            </li>
           </ul>
         </nav>
 
         <Routes>
           <Route path="/search-food" element={<SearchFood />} />
           <Route path="/log-food" element={<LogFood />} />
-          {/* Define other routes here */}
+          <Route path="/analyze-activity" element={<AnalyzeActivity />} />
         </Routes>
       </div>
     </Router>
