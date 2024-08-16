@@ -173,7 +173,7 @@ function LogFood() {
             </button>
             </form>
             <FoodLogSummary foodLogs={foodLogs} />
-            <FoodLogTable foodLogs={foodLogs} />
+            <FoodLogTable foodLogs={foodLogs} setFoodLogs={setFoodLogs}/>
         </div>
       </>
   );

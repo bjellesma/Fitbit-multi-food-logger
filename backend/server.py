@@ -74,7 +74,8 @@ def make_api_request(url, method='get', headers=None, data=None, params=None):
         response = requests.get(url, headers=headers, params=params)
     elif method.lower() == 'post':
         response = requests.post(url, headers=headers, json=data)
-
+    elif method.lower() == 'delete':
+        response = requests.delete(url, headers=headers, json=data)
     if response.status_code == 401:  # Token expired
         access_token, refresh_token = refresh_access_token(refresh_token)
         if not access_token or not refresh_token:
@@ -86,7 +87,11 @@ def make_api_request(url, method='get', headers=None, data=None, params=None):
         elif method.lower() == 'post':
             response = requests.post(url, headers=headers, json=data)
 
-    return response.json(), response.status_code
+    if method.lower() == 'delete':
+        res = response
+    else:
+        res = response.json()
+    return res, response.status_code
 
 @app.route('/api/searchfoods/<query>', methods=['GET'])
 def search_foods(query):
@@ -122,6 +127,16 @@ def log_food():
             return jsonify({'error': response}), status_code
         food_logs.append(response['foodLog'])
     return jsonify({'message': 'Logged food successfully.', 'food': food_logs}), 201
+
+@app.route('/api/delete_food/<log_id>', methods=['DELETE'])
+def delete_food(log_id):
+    food_logs = []
+    url = f"https://api.fitbit.com/1/user/-/foods/log/{log_id}.json"
+    response, status_code = make_api_request(url, method='delete')
+    # 204 is the status code for successful deletion
+    if status_code != 204: 
+        return jsonify({'error': 'Unable to delete food'}), status_code
+    return jsonify({'message': 'Deleted food successfully.'}), 201
 
 if __name__ == '__main__':
     app.run(debug=True)
