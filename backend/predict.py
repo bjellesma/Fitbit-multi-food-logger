@@ -1,6 +1,27 @@
 import numpy as np
 import copy, math
 
+def zscore_normalize_features(X):
+    """
+    computes  X, zcore normalized by column
+    
+    Args:
+      X (ndarray (m,n))     : input data, m examples, n features
+      
+    Returns:
+      X_norm (ndarray (m,n)): input normalized by column
+      mu (ndarray (n,))     : mean of each feature
+      sigma (ndarray (n,))  : standard deviation of each feature
+    """
+    # find the mean of each column/feature
+    mu     = np.mean(X, axis=0)                 # mu will have shape (n,)
+    # find the standard deviation of each column/feature
+    sigma  = np.std(X, axis=0)                  # sigma will have shape (n,)
+    # element-wise, subtract mu for that column from each example, divide by std for that column
+    X_norm = (X - mu) / sigma      
+
+    return (X_norm, mu, sigma)
+
 def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters): 
     """
     Performs batch gradient descent to learn w and b. Updates w and b by taking 
@@ -48,30 +69,25 @@ def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, 
 def compute_gradient(X, y, w, b): 
     """
     Computes the gradient for linear regression 
+ 
     Args:
-      X (ndarray (m,n)): Data, m examples with n features
-      y (ndarray (m,)) : target values
-      w (ndarray (n,)) : model parameters  
-      b (scalar)       : model parameter
-      
-    Returns:
-      dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
-      dj_db (scalar):       The gradient of the cost w.r.t. the parameter b. 
+      X : (array_like Shape (m,n)) variable such as house size 
+      y : (array_like Shape (m,1)) actual value 
+      w : (array_like Shape (n,1)) Values of parameters of the model      
+      b : (scalar )                Values of parameter of the model      
+    Returns
+      dj_dw: (array_like Shape (n,1)) The gradient of the cost w.r.t. the parameters w. 
+      dj_db: (scalar)                The gradient of the cost w.r.t. the parameter b. 
+                                  
     """
-    m,n = X.shape           #(number of examples, number of features)
-    dj_dw = np.zeros((n,))
-    dj_db = 0.
-
-    for i in range(m):                             
-        err = (np.dot(X[i], w) + b) - y[i]   
-        for j in range(n):                         
-            dj_dw[j] = dj_dw[j] + err * X[i, j]    
-        dj_db = dj_db + err                        
-    dj_dw = dj_dw / m                                
-    dj_db = dj_db / m                                
+    m,n = X.shape
+    # @ indicates matrix multiplication
+    f_wb = X @ w + b              
+    e   = f_wb - y                
+    dj_dw  = (1/m) * (X.T @ e)    
+    dj_db  = (1/m) * np.sum(e)    
         
-    return dj_db, dj_dw
-
+    return dj_db,dj_dw
 def compute_cost(X, y, w, b): 
     """
     compute cost
@@ -112,25 +128,34 @@ def predict_calories(data, steps, activity_minutes):
     x_train = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
     y_train = np.array([entry['activityCalories'] for entry in data])
 
-    # init bias to zero and use random weights
-    # we choose a random set in order to start the model
-    # we make sure that w_init is small so that we don't have overflow issues
-    b_init = 0
-    w_init = np.array([ -5,-5])
+    # normalize the original features
+    x_train, x_mu, x_sigma = zscore_normalize_features(x_train)
+
+    print(f'x_mu: {x_mu}, x_sigma: {x_sigma}')
+
+    m,n = x_train.shape
+    # initialize parameters
+    initial_w = np.array([ .1, 3])
+    initial_b = 1766
 
     # gradient descent
     iterations = 10000
-    alpha = 1.42e-8
-    w_final, b_final, J_hist = gradient_descent(x_train, y_train, w_init, b_init,
+    alpha = 1.42e-1
+    w_final, b_final, J_hist = gradient_descent(x_train, y_train, initial_w, initial_b,
                                                     compute_cost, compute_gradient, 
                                                     alpha, iterations)
     print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
     m,_ = x_train.shape
     for i in range(m):
         print(f"prediction: {np.dot(x_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
-    # Calculate the final prediction for the given steps and activity minutes
-    prediction = np.dot(np.array([int(steps), int(activity_minutes)]), w_final) + b_final 
+    
+    # Normalize the input features
+    steps_normalized = (int(steps) - x_mu[0]) / x_sigma[0]
+    activity_minutes_normalized = (int(activity_minutes) - x_mu[1]) / x_sigma[1]
+    
+    # Calculate the final prediction using normalized features
+    prediction_normalized = np.dot(np.array([steps_normalized, activity_minutes_normalized]), w_final) + b_final
 
     return {
-        'prediction': prediction
+        'prediction': prediction_normalized
     }
