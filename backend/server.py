@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import time
+from predict import predict_calories
 app = Flask(__name__)
 CORS(app)
 
@@ -221,10 +222,14 @@ def get_activity(activity_period = '1y'):
 
     total_duration = time.time() - start_time  # End time tracking
     print(f"Total time taken for the request: {total_duration:.4f} seconds")
-
+    print(combined_data)
     return jsonify(combined_data), 200
 
-
+@app.route('/api/predict/calories/<steps>/<activity_minutes>', methods=['POST'])
+def post_predict_calories(steps, activity_minutes):
+    data = request.json
+    predict = predict_calories(data, steps, activity_minutes)
+    return jsonify(predict), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

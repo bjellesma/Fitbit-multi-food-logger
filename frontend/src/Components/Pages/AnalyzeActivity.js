@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ActivityPlot from '../ActivityPlot';
+import ActivityPrediction from '../ActivityPrediction';
 
 function AnalyzeActivity() {
   // State to hold the activity data
@@ -35,6 +36,7 @@ function AnalyzeActivity() {
   return (
     <>
     <div className="mt-8">
+        <ActivityPrediction activityData={activityData} />
         <ActivityPlot
           dateTime={dates}
           steps={steps}
