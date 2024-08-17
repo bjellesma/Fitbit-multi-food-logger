@@ -141,8 +141,8 @@ def delete_food(log_id):
     return jsonify({'message': 'Deleted food successfully.'}), 201
 
 
-@app.route('/api/activity', methods=['GET'])
-def get_activity():
+@app.route('/api/activity/<activity_period>', methods=['GET'])
+def get_activity(activity_period = '1y'):
     start_time = time.time()  # Start time tracking
     
     before_date = request.args.get("before_date")
@@ -151,22 +151,27 @@ def get_activity():
 
     # Fetch data from various endpoints
     steps_start = time.time()
-    steps_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/steps/date/{before_date}/1y.json")
+    steps_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/steps/date/{before_date}/{activity_period}.json")
     steps_duration = time.time() - steps_start
     print(f"Time taken for steps data: {steps_duration:.4f} seconds")
 
     activity_calories_start = time.time()
-    activity_calories_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/calories/date/{before_date}/1y.json")
+    activity_calories_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/calories/date/{before_date}/{activity_period}.json")
     activity_calories_duration = time.time() - activity_calories_start
     print(f"Time taken for activity calories data: {activity_calories_duration:.4f} seconds")
 
+    activity_zone_minutes_start = time.time()
+    activity_zone_minutes_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/heart/date/{before_date}/{activity_period}.json")
+    activity_zone_minutes_duration = time.time() - activity_zone_minutes_start
+    print(f"Time taken for activity zone minutes data: {activity_zone_minutes_duration:.4f} seconds")
+
     minutes_very_active_start = time.time()
-    minutes_very_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/{before_date}/1y.json")
+    minutes_very_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/{before_date}/{activity_period}.json")
     minutes_very_active_duration = time.time() - minutes_very_active_start
     print(f"Time taken for very active minutes data: {minutes_very_active_duration:.4f} seconds")
 
     minutes_fairly_active_start = time.time()
-    minutes_fairly_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/{before_date}/1y.json")
+    minutes_fairly_active_response, _ = make_api_request(f"https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/{before_date}/{activity_period}.json")
     minutes_fairly_active_duration = time.time() - minutes_fairly_active_start
     print(f"Time taken for fairly active minutes data: {minutes_fairly_active_duration:.4f} seconds")
 
@@ -174,10 +179,11 @@ def get_activity():
     parse_start = time.time()
     steps_data = steps_response.get('activities-steps', [])
     activity_calories_data = activity_calories_response.get('activities-calories', [])
+    activity_zone_minutes_data = activity_zone_minutes_response.get('activities-heart', [])
     minutes_very_active_data = minutes_very_active_response.get('activities-minutesVeryActive', [])
-    print(f'minutes_very_active_data: {minutes_very_active_data[-2]}')
+    # print(f'minutes_very_active_data: {minutes_very_active_data[-2]}')
     minutes_fairly_active_data = minutes_fairly_active_response.get('activities-minutesFairlyActive', [])
-    print(f'minutesFairlyActive: {minutes_fairly_active_data[-2]}')
+    # print(f'minutesFairlyActive: {minutes_fairly_active_data[-2]}')
     parse_duration = time.time() - parse_start
     print(f"Time taken to parse the data: {parse_duration:.4f} seconds")
 
@@ -185,18 +191,30 @@ def get_activity():
     combine_start = time.time()
     combined_data = []
     for i in range(len(steps_data)):
+        
         date = steps_data[i]['dateTime']
         steps = int(steps_data[i]['value'])
         activity_calories = int(activity_calories_data[i]['value'])
-        minutes_very_active = int(minutes_very_active_data[i]['value'])
-        minutes_fairly_active = int(minutes_fairly_active_data[i]['value'])
+        activity_zone_data = activity_zone_minutes_data[i]['value']['heartRateZones']
+        # Initialize variables to hold the minutes for each zone
+        fat_burn_minutes = 0
+        cardio_minutes = 0
+        peak_minutes = 0
+        # calc zone data
+        for datum in activity_zone_data:
+            if datum['name'] == 'Fat Burn':
+                fat_burn_minutes = datum['minutes']
+            elif datum['name'] == 'Cardio':
+                cardio_minutes = datum['minutes'] * 2
+            elif datum['name'] == 'Peak':
+                peak_minutes = datum['minutes'] * 2
+            zone_activity_minutes = fat_burn_minutes + cardio_minutes + peak_minutes
 
         combined_data.append({
             'dateTime': date,
             'steps': steps,
             'activityCalories': activity_calories,
-            'minutesFairlyActive': minutes_fairly_active,
-            'minutesVeryActive': minutes_very_active,
+            'zoneActivityMinutes': zone_activity_minutes,
         })
     combine_duration = time.time() - combine_start
     print(f"Time taken to combine the data: {combine_duration:.4f} seconds")

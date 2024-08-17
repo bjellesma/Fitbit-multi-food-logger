@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import ActivityPlot from '../ActivityPlot';
 
 function AnalyzeActivity() {
   // State to hold the activity data
@@ -15,7 +16,7 @@ function AnalyzeActivity() {
 
     // Format the date as YYYY-MM-DD
     const formattedDate = `${year}-${month}-${day}`;
-    axios.get(`http://localhost:5000/api/activity?before_date=${formattedDate}`)
+    axios.get(`http://localhost:5000/api/activity/1y?before_date=${formattedDate}`)
       .then(response => {
         setActivityData(response.data);
         console.log(response.data);
@@ -25,8 +26,23 @@ function AnalyzeActivity() {
       });
   }, []);
 
+  // Prepare data for the plot
+  const dates = activityData.map(activity => activity.dateTime);
+  const steps = activityData.map(activity => activity.steps);
+  const zoneActivityMinutes = activityData.map(activity => activity.zoneActivityMinutes);
+  const activityCalories = activityData.map(activity => activity.activityCalories);
+
   return (
-    <div className="p-4">
+    <>
+    <div className="mt-8">
+        <ActivityPlot
+          dateTime={dates}
+          steps={steps}
+          zoneActivityMinutes={zoneActivityMinutes}
+          activityCalories={activityCalories}
+        />
+      </div>
+      <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Activity Analysis</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto border-collapse border border-gray-300">
@@ -34,8 +50,7 @@ function AnalyzeActivity() {
             <tr>
               <th className="border border-gray-300 p-2">Date</th>
               <th className="border border-gray-300 p-2">Steps</th>
-              <th className="border border-gray-300 p-2">Moderate Activity Minutes</th>
-              <th className="border border-gray-300 p-2">Rigorous Activity Minutes</th>
+              <th className="border border-gray-300 p-2">Zone Activity Minutes</th>
               <th className="border border-gray-300 p-2">Calories Burned</th>
             </tr>
           </thead>
@@ -45,8 +60,7 @@ function AnalyzeActivity() {
                 <tr key={index} className="hover:bg-gray-100">
                   <td className="border border-gray-300 p-2">{activity.dateTime}</td>
                   <td className="border border-gray-300 p-2">{activity.steps}</td>
-                  <td className="border border-gray-300 p-2">{activity.minutesFairlyActive}</td>
-                  <td className="border border-gray-300 p-2">{activity.minutesVeryActive}</td>
+                  <td className="border border-gray-300 p-2">{activity.zoneActivityMinutes}</td>
                   <td className="border border-gray-300 p-2">{activity.activityCalories}</td>
                 </tr>
               ))
@@ -59,7 +73,8 @@ function AnalyzeActivity() {
         </table>
       </div>
     </div>
-  );
+    </>
+      );
 }
 
 export default AnalyzeActivity;
