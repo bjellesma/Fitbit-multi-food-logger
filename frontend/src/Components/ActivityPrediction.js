@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import Plot from 'react-plotly.js';
 
 function ActivityPrediction({activityData}) {
   // State to hold the form input values
@@ -8,6 +9,7 @@ function ActivityPrediction({activityData}) {
   
   // State to hold the prediction result
   const [prediction, setPrediction] = useState(null);
+  const [predictionHistory, setPredictionHistory] = useState([]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -18,8 +20,9 @@ function ActivityPrediction({activityData}) {
       // Make the POST request to the API
       const response = await axios.post(`http://localhost:5000/api/predict/calories/${steps}/${activityMinutes}`, activityData);
       
-      // Set the prediction result
-      setPrediction(response.data.prediction);
+      // Set the prediction result and history
+      setPrediction(response.data.final_prediction);
+      setPredictionHistory(response.data.prediction_history || []);
     } catch (error) {
       console.error('Error making prediction:', error);
     }
@@ -27,6 +30,34 @@ function ActivityPrediction({activityData}) {
 
   return (
     <div>
+      <Plot
+          data={[
+            {
+              x: activityData.map(data => data.dateTime), // Original data x-axis
+              y: activityData.map(data => data.activityCalories), // Original data y-axis
+              type: 'scatter',
+              mode: 'lines+markers',
+              name: 'Calories Burned',
+              line: { color: 'green' }
+            },
+            {
+              x: predictionHistory.map(pred => pred.dateTime), // Prediction history x-axis
+              y: predictionHistory.map(pred => pred.value), // Prediction history y-axis
+              type: 'scatter',
+              mode: 'lines+markers',
+              name: 'Prediction History',
+              marker: { color: 'red' }
+            }
+          ]}
+          layout={{
+            title: 'Activity Data Over Time',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Calories' },
+            margin: { t: 30, l: 50, r: 50, b: 50 },
+            legend: { orientation: 'h', y: -0.2 }
+          }}
+          style={{ width: '100%', height: '100%' }}
+        />
       <h2 className="text-2xl font-bold mb-4">Activity Prediction</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">

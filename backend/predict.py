@@ -124,7 +124,6 @@ def predict(x, w, b):
     return p 
 
 def predict_calories(data, steps, activity_minutes):
-    print(f'data: {data}')
     x_train = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
     y_train = np.array([entry['activityCalories'] for entry in data])
 
@@ -146,8 +145,12 @@ def predict_calories(data, steps, activity_minutes):
                                                     alpha, iterations)
     print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
     m,_ = x_train.shape
+    prediction_history = []
     for i in range(m):
-        print(f"prediction: {np.dot(x_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
+        prediction_history.append({
+          'dateTime': data[i]['dateTime'],
+          'value': np.dot(x_train[i], w_final) + b_final
+        })
     
     # Normalize the input features
     steps_normalized = (int(steps) - x_mu[0]) / x_sigma[0]
@@ -157,5 +160,6 @@ def predict_calories(data, steps, activity_minutes):
     prediction_normalized = np.dot(np.array([steps_normalized, activity_minutes_normalized]), w_final) + b_final
 
     return {
-        'prediction': prediction_normalized
+        'final_prediction': prediction_normalized,
+        'prediction_history': prediction_history
     }
