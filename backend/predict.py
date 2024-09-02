@@ -1,6 +1,12 @@
 import numpy as np
 import copy, math
 
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras import Sequential
+from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
+from tensorflow.keras.activations import sigmoid
+
 def zscore_normalize_features(X):
     """
     computes  X, zcore normalized by column
@@ -124,18 +130,26 @@ def predict(x, w, b):
     return p 
 
 def predict_calories(data, steps, activity_minutes):
+    # Ensure steps and activity_minutes are numeric
+    steps = float(steps)
+    activity_minutes = float(activity_minutes)
+
     x_train = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
     y_train = np.array([entry['activityCalories'] for entry in data])
 
     # normalize the original features
     x_train, x_mu, x_sigma = zscore_normalize_features(x_train)
 
-    print(f'x_mu: {x_mu}, x_sigma: {x_sigma}')
 
     m,n = x_train.shape
     # initialize parameters
-    initial_w = np.array([ .1, 3])
+    initial_w = np.array([ 0,0])
     initial_b = 1766
+
+    print(f'shape: {x_train.shape} - x_mu: {x_mu}, x_sigma: {x_sigma}')
+    tf_pred = tf_predict(x_test=np.array([[steps, activity_minutes]]), x_train=x_train, y_train=y_train,w_init=initial_w,
+        b_init=initial_b)
+    print(f'tf predict: {tf_pred}')
 
     # gradient descent
     iterations = 10000
@@ -160,6 +174,33 @@ def predict_calories(data, steps, activity_minutes):
     prediction_normalized = np.dot(np.array([steps_normalized, activity_minutes_normalized]), w_final) + b_final
 
     return {
+        'tf_prediction': str(tf_pred[0][0]),
         'final_prediction': prediction_normalized,
         'prediction_history': prediction_history
     }
+
+def tf_predict(x_test, x_train, y_train, w_init, b_init):
+    # Initialize the normalization layer and adapt it to the training data
+    normalize = tf.keras.layers.Normalization(axis=-1)
+    normalize.adapt(x_train)  # Learns mean, variance from training data
+
+    # Normalize both training and test data
+    x_train = normalize(x_train)
+    x_test = normalize(x_test)
+
+    # build the model
+    model = Sequential(
+      [
+          tf.keras.Input(shape=(2,)),
+          tf.keras.layers.Dense(1,  activation = 'linear', name='L1')
+      ]
+    )
+    # Manually set the weights and bias to match the initial values used in gradient descent
+    model.layers[0].set_weights([np.array(w_init).reshape(-1, 1), np.array([b_init])])
+    # Compile the model with a lower learning rate
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=9.3e-5), loss='mean_squared_error')
+    
+    # Train the model
+    model.fit(x_train, y_train, epochs=100, batch_size=32)
+    
+    return model.predict(x_test)
