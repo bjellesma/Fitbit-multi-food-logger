@@ -9,6 +9,7 @@ requests = "*"
 python-dotenv = "*"
 flask-cors = "*"
 numpy = "*"
+scikit-learn = "*"
 
 [dev-packages]
 

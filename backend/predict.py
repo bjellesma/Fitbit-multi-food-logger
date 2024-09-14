@@ -1,11 +1,10 @@
 import numpy as np
 import copy, math
 
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras import Sequential
-from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
-from tensorflow.keras.activations import sigmoid
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
 
 def zscore_normalize_features(X):
     """
@@ -72,28 +71,24 @@ def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, 
         
     return w, b, J_history #return final w,b and J history for graphing
 
-def compute_gradient(X, y, w, b): 
-    """
-    Computes the gradient for linear regression 
- 
-    Args:
-      X : (array_like Shape (m,n)) variable such as house size 
-      y : (array_like Shape (m,1)) actual value 
-      w : (array_like Shape (n,1)) Values of parameters of the model      
-      b : (scalar )                Values of parameter of the model      
-    Returns
-      dj_dw: (array_like Shape (n,1)) The gradient of the cost w.r.t. the parameters w. 
-      dj_db: (scalar)                The gradient of the cost w.r.t. the parameter b. 
-                                  
-    """
-    m,n = X.shape
-    # @ indicates matrix multiplication
-    f_wb = X @ w + b              
-    e   = f_wb - y                
-    dj_dw  = (1/m) * (X.T @ e)    
-    dj_db  = (1/m) * np.sum(e)    
-        
-    return dj_db,dj_dw
+def gradient_descent(X, y, learning_rate=0.01, epochs=1000):
+    m, n = X.shape
+    theta = np.zeros(n)
+    mse_history = []
+
+    for epoch in range(epochs):
+        y_pred = np.dot(X, theta)
+        error = y_pred - y
+        gradient = np.dot(X.T, error) / m
+        theta -= learning_rate * gradient
+        if (epoch + 1) % 100 == 0 or epoch == 0:  # Record MSE at epoch 1 and every 100 epochs
+            
+            mse = np.mean(error ** 2)
+            mse_history.append((epoch + 1, mse))
+            print(f'mse - {mse} at epoch {epoch}')
+
+    return theta, mse_history
+
 def compute_cost(X, y, w, b): 
     """
     compute cost
@@ -130,77 +125,101 @@ def predict(x, w, b):
     return p 
 
 def predict_calories(data, steps, activity_minutes):
-    # Ensure steps and activity_minutes are numeric
-    steps = float(steps)
-    activity_minutes = float(activity_minutes)
+    # Prepare the data
+    X = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
+    y = np.array([entry['activityCalories'] for entry in data])
 
-    x_train = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
-    y_train = np.array([entry['activityCalories'] for entry in data])
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # normalize the original features
-    x_train, x_mu, x_sigma = zscore_normalize_features(x_train)
+    # Normalize the features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
+    # create a linear regression model to analyze the numbers
+    model = LinearRegression()
+    # train the model with the scaled data and the actual output
+    model.fit(X_train_scaled, y_train)
 
-    m,n = x_train.shape
-    # initialize parameters
-    initial_w = np.array([ 0,0])
-    initial_b = 1766
+    # use the scaled weights to act on the new unseen data and predict
+    input_data = scaler.transform(np.array([[steps, activity_minutes]]))
+    # scikit learn gives us a matrix (2d array) so we get the first index which is the true 1d array
+    prediction = model.predict(input_data)[0]
 
-    print(f'shape: {x_train.shape} - x_mu: {x_mu}, x_sigma: {x_sigma}')
-    tf_pred = tf_predict(x_test=np.array([[steps, activity_minutes]]), x_train=x_train, y_train=y_train,w_init=initial_w,
-        b_init=initial_b)
-    print(f'tf predict: {tf_pred}')
-
-    # gradient descent
-    iterations = 10000
-    alpha = 1.42e-1
-    w_final, b_final, J_hist = gradient_descent(x_train, y_train, initial_w, initial_b,
-                                                    compute_cost, compute_gradient, 
-                                                    alpha, iterations)
-    print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
-    m,_ = x_train.shape
+    # Calculate prediction history
+    X_scaled = scaler.transform(X)
     prediction_history = []
-    for i in range(m):
+    for i, entry in enumerate(data):
+        pred = model.predict(X_scaled[i].reshape(1, -1))[0]
         prediction_history.append({
-          'dateTime': data[i]['dateTime'],
-          'value': np.dot(x_train[i], w_final) + b_final
+            'dateTime': entry['dateTime'],
+            'value': pred
         })
-    
-    # Normalize the input features
-    steps_normalized = (int(steps) - x_mu[0]) / x_sigma[0]
-    activity_minutes_normalized = (int(activity_minutes) - x_mu[1]) / x_sigma[1]
-    
-    # Calculate the final prediction using normalized features
-    prediction_normalized = np.dot(np.array([steps_normalized, activity_minutes_normalized]), w_final) + b_final
+
+    # report mse
+    # Evaluate the model on the test set
+    y_pred = model.predict(X_test_scaled)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
 
     return {
-        'tf_prediction': str(tf_pred[0][0]),
-        'final_prediction': prediction_normalized,
-        'prediction_history': prediction_history
+        'final_prediction': prediction,
+        'prediction_history': prediction_history,
+        'model_performance': {
+            'mean_squared_error': mse,
+            'r2': r2
+        }
     }
 
-def tf_predict(x_test, x_train, y_train, w_init, b_init):
-    # Initialize the normalization layer and adapt it to the training data
-    normalize = tf.keras.layers.Normalization(axis=-1)
-    normalize.adapt(x_train)  # Learns mean, variance from training data
+def predict_calories_gradient(data, steps, activity_minutes, learning_rate=0.01, epochs=1000):
+    """this function does not use sklearn so that we can see how the data performs on each epoch"""
+    X = np.array([[entry['steps'], entry['zoneActivityMinutes']] for entry in data])
+    y = np.array([entry['activityCalories'] for entry in data])
 
-    # Normalize both training and test data
-    x_train = normalize(x_train)
-    x_test = normalize(x_test)
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # build the model
-    model = Sequential(
-      [
-          tf.keras.Input(shape=(2,)),
-          tf.keras.layers.Dense(1,  activation = 'linear', name='L1')
-      ]
-    )
-    # Manually set the weights and bias to match the initial values used in gradient descent
-    model.layers[0].set_weights([np.array(w_init).reshape(-1, 1), np.array([b_init])])
-    # Compile the model with a lower learning rate
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=9.3e-5), loss='mean_squared_error')
-    
-    # Train the model
-    model.fit(x_train, y_train, epochs=100, batch_size=32)
-    
-    return model.predict(x_test)
+    # Normalize the features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # Add bias term
+    X_train_scaled = np.c_[np.ones(X_train_scaled.shape[0]), X_train_scaled]
+    X_test_scaled = np.c_[np.ones(X_test_scaled.shape[0]), X_test_scaled]
+
+
+    # Train the model using gradient descent
+    theta, mse_history = gradient_descent(X_train_scaled, y_train, learning_rate, epochs)
+
+    # Make predictions on test set
+    y_pred_test = np.dot(X_test_scaled, theta)
+    mse_test = mean_squared_error(y_test, y_pred_test)
+    r2_test = r2_score(y_test, y_pred_test)
+
+    # Make final prediction
+    input_data = scaler.transform(np.array([[steps, activity_minutes]]))
+    input_data_with_bias = np.c_[np.ones(1), input_data]
+    prediction = np.dot(input_data_with_bias, theta)[0]
+
+    # Calculate prediction history
+    X_scaled = scaler.transform(X)
+    X_scaled_with_bias = np.c_[np.ones(X_scaled.shape[0]), X_scaled]
+    prediction_history = []
+    for i, entry in enumerate(data):
+        pred = np.dot(X_scaled_with_bias[i], theta)
+        prediction_history.append({
+            'dateTime': entry['dateTime'],
+            'value': pred
+        })
+
+    return {
+        'final_prediction': prediction,
+        'prediction_history': prediction_history,
+        'model_performance': {
+            'mse_test': mse_test,
+            'r2_test': r2_test,
+            'mse_history': mse_history
+        }
+    }
