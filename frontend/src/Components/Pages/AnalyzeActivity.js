@@ -19,7 +19,7 @@ function AnalyzeActivity() {
 
     // Format the date as YYYY-MM-DD
     const formattedDate = `${year}-${month}-${day}`;
-    axios.get(`http://localhost:5000/api/activity/1y?before_date=${formattedDate}`)
+    axios.get(`http://localhost:5000/api/activity/7d?before_date=${formattedDate}`)
       .then(response => {
         setActivityData(response.data);
         setLoading(false); // Set loading to false once data is fetched

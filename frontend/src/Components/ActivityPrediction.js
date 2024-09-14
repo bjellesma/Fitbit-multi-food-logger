@@ -9,7 +9,10 @@ function ActivityPrediction({activityData}) {
   
   // State to hold the prediction result
   const [prediction, setPrediction] = useState(null);
+  const [modelPerformance, setModelPerformance] = useState(null);
   const [predictionHistory, setPredictionHistory] = useState([]);
+  const [predictionGradient, setPredictionGradient] = useState(null);
+  const [modelPerformanceGradient, setModelPerformanceGradient] = useState(null);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -21,8 +24,11 @@ function ActivityPrediction({activityData}) {
       const response = await axios.post(`http://localhost:5000/api/predict/calories/${steps}/${activityMinutes}`, activityData);
       
       // Set the prediction result and history
-      setPrediction(response.data.final_prediction);
-      setPredictionHistory(response.data.prediction_history || []);
+      setPrediction(response.data.sklearn.final_prediction);
+      setModelPerformance(response.data.sklearn.model_performance);
+      setPredictionGradient(response.data.gradient.final_prediction);
+      setModelPerformanceGradient(response.data.gradient.model_performance);
+      setPredictionHistory(response.data.sklearn.prediction_history || []);
     } catch (error) {
       console.error('Error making prediction:', error);
     }
@@ -99,11 +105,40 @@ function ActivityPrediction({activityData}) {
         </button>
       </form>
 
-      {prediction !== null && (
-        <div className="mt-4">
-          <p className="text-lg">
-            Predicted Calories: <strong>{prediction}</strong>
-          </p>
+      {prediction !== null &&
+      modelPerformance !== null && (
+        <div className='row'>
+          <div className="mt-4">
+            <p className="text-lg">
+              Predicted Calories: <strong>{prediction}</strong><br />
+              Mean Squared Error: <strong>{modelPerformance.mean_squared_error}</strong>
+            </p>
+          </div>
+          <div className="mt-4">
+            <p className="text-lg">
+              Gradient Predicted Calories: <strong>{predictionGradient}</strong><br />
+            </p>
+            <div>
+              <h3>Gradient Mean Squared Error History:</h3>
+              <table className="w-full text-sm text-left text-gray-500">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3">Epoch</th>
+                    <th scope="col" className="px-6 py-3">MSE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modelPerformanceGradient.mse_history.map(([epoch, mse]) => (
+                    <tr key={epoch} className="bg-white border-b">
+                      <td className="px-6 py-4">{epoch}</td>
+                      <td className="px-6 py-4">{mse.toFixed(4)}</td>
+                      
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>
