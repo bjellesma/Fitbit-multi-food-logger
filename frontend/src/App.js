@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import DatePicker from './Components/DatePicker';
+import CaloriesChart from './Components/CaloriesChart';
+import FoodLog from './Components/FoodLog';
 
 function App() {
   const [meal, setMeal] = useState('');
   const [mealType, setMealType] = useState('');
-  const [dateOption, setDateOption] = useState('');
+  const [dateOption, setDateOption] = useState('1');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [submitStatus, setSubmitStatus] = useState(null);
+
+  // Listen for food deletion events to refresh calories chart
+  useEffect(() => {
+    const handleFoodDeleted = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    const handleFoodUpdated = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('foodDeleted', handleFoodDeleted);
+    window.addEventListener('foodUpdated', handleFoodUpdated);
+    
+    return () => {
+      window.removeEventListener('foodDeleted', handleFoodDeleted);
+      window.removeEventListener('foodUpdated', handleFoodUpdated);
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    if (!meal || !mealType) {
+      setSubmitStatus({ type: 'error', message: 'Please select both a meal and meal type' });
+      return;
+    }
+    
     let currentDate = new Date();
     switch (parseInt(dateOption)) {
       case 1:
@@ -30,64 +60,224 @@ function App() {
     }
 
     const foodEntries = {
-      meal,
-      mealType,
-      date: currentDate,
+      meal: parseInt(meal),
+      mealType: parseInt(mealType),
+      dateOption: parseInt(dateOption) || 1,
     };
 
     try {
+      setSubmitStatus({ type: 'loading', message: 'Logging food...' });
       const response = await axios.post('http://localhost:5000/api/log_food', foodEntries);
-      console.log(response.data.message);
+      
+      setSubmitStatus({ 
+        type: 'success', 
+        message: response.data.message,
+        loggedFoods: response.data.logged_foods || []
+      });
+      
+      // Trigger calories chart refresh
+      setRefreshTrigger(prev => prev + 1);
+      
+      // Reset form
+      setMeal('');
+      setMealType('');
+      
     } catch (error) {
-      console.error(error.response.data.error);
+      setSubmitStatus({ 
+        type: 'error', 
+        message: error.response?.data?.error || 'Failed to log food' 
+      });
     }
   };
 
   return (
-    <div className="App">
-      <h1>Log Food Entry</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          What do you want to add?
-          <select value={meal} onChange={(e) => setMeal(e.target.value)}>
-            <option value="">Select a meal</option>
-            <option value="1">morning shake</option>
-            <option value="2">oatmeal pie</option>
-            <option value="3">Yogurt</option>
-            <option value="4">Grapes/Carrots</option>
-            <option value="5">Soylent</option>
-            <option value="6">Granola</option>
-            <option value="7">Preworkout</option>
-            <option value="8">Post workout</option>
-            <option value="9">Chicken and Pasta</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          When did you eat this?
-          <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
-            <option value="">Select meal type</option>
-            <option value="1">Breakfast</option>
-            <option value="2">Morning Snack</option>
-            <option value="3">Lunch</option>
-            <option value="4">Afternoon Snack</option>
-            <option value="5">Dinner</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          Select the date:
-          <select value={dateOption} onChange={(e) => setDateOption(e.target.value)}>
-            <option value="">Select date</option>
-            <option value="1">Today</option>
-            <option value="2">Yesterday</option>
-            <option value="3">Two days ago</option>
-            <option value="4">Three days ago</option>
-          </select>
-        </label>
-        <br />
-        <button type="submit">Log Food</button>
-      </form>
+    <div className="App" style={{ 
+      maxWidth: '1200px', 
+      margin: '0 auto', 
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ 
+        textAlign: 'center', 
+        color: '#2C3E50',
+        marginBottom: '30px'
+      }}>
+        Fitbit Multi Food Editor
+      </h1>
+      
+      {/* Date Selection */}
+      <div style={{
+        backgroundColor: '#F8F9FA',
+        padding: '20px',
+        borderRadius: '10px',
+        marginBottom: '30px',
+        textAlign: 'center'
+      }}>
+        <h3 style={{ 
+          color: '#34495E',
+          marginBottom: '15px'
+        }}>
+          Select Date to View
+        </h3>
+        <select 
+          value={dateOption} 
+          onChange={(e) => setDateOption(e.target.value)}
+          style={{
+            padding: '10px 15px',
+            borderRadius: '5px',
+            border: '1px solid #BDC3C7',
+            fontSize: '14px',
+            minWidth: '200px'
+          }}
+        >
+          <option value="1">Today</option>
+          <option value="2">Yesterday</option>
+          <option value="3">Two days ago</option>
+          <option value="4">Three days ago</option>
+        </select>
+      </div>
+      
+      {/* Calories Chart Section */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ 
+          textAlign: 'center', 
+          color: '#34495E',
+          marginBottom: '20px'
+        }}>
+          Daily Calories Summary
+        </h2>
+        <CaloriesChart refreshTrigger={refreshTrigger} />
+      </div>
+      
+      {/* Food Log Section */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ 
+          textAlign: 'center', 
+          color: '#34495E',
+          marginBottom: '20px'
+        }}>
+          Food Log
+        </h2>
+        <FoodLog selectedDate={dateOption} refreshTrigger={refreshTrigger} />
+      </div>
+      
+      {/* Food Logging Section */}
+      <div style={{
+        backgroundColor: '#F8F9FA',
+        padding: '30px',
+        borderRadius: '10px',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h2 style={{ 
+          textAlign: 'center', 
+          color: '#34495E',
+          marginBottom: '30px'
+        }}>
+          Log Food Entry
+        </h2>
+        
+        {/* Status Message */}
+        {submitStatus && (
+          <div style={{
+            padding: '15px',
+            marginBottom: '20px',
+            borderRadius: '5px',
+            textAlign: 'center',
+            backgroundColor: submitStatus.type === 'success' ? '#D4EDDA' : 
+                           submitStatus.type === 'error' ? '#F8D7DA' : '#D1ECF1',
+            color: submitStatus.type === 'success' ? '#155724' : 
+                   submitStatus.type === 'error' ? '#721C24' : '#0C5460',
+            border: `1px solid ${submitStatus.type === 'success' ? '#C3E6CB' : 
+                                submitStatus.type === 'error' ? '#F5C6CB' : '#BEE5EB'}`
+          }}>
+            {submitStatus.message}
+            {submitStatus.loggedFoods && submitStatus.loggedFoods.length > 0 && (
+              <div style={{ marginTop: '10px', fontSize: '14px' }}>
+                Logged: {submitStatus.loggedFoods.join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+              What do you want to add?
+            </label>
+            <select 
+              value={meal} 
+              onChange={(e) => setMeal(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '5px',
+                border: '1px solid #BDC3C7',
+                fontSize: '14px'
+              }}
+            >
+              <option value="">Select a meal</option>
+              <option value="1">Morning Shake</option>
+              <option value="2">Oatmeal Pie</option>
+              <option value="3">Yogurt</option>
+              <option value="4">Grapes/Carrots</option>
+              <option value="5">Soylent</option>
+              <option value="6">Granola</option>
+              <option value="7">Preworkout</option>
+              <option value="8">Post Workout</option>
+              <option value="9">Chicken and Pasta</option>
+            </select>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+              When did you eat this?
+            </label>
+            <select 
+              value={mealType} 
+              onChange={(e) => setMealType(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '5px',
+                border: '1px solid #BDC3C7',
+                fontSize: '14px'
+              }}
+            >
+              <option value="">Select meal type</option>
+              <option value="1">Breakfast</option>
+              <option value="2">Morning Snack</option>
+              <option value="3">Lunch</option>
+              <option value="4">Afternoon Snack</option>
+              <option value="5">Dinner</option>
+            </select>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+              Select a Date
+            </label>
+            <DatePicker />
+          </div>
+          
+          <button 
+            type="submit"
+            disabled={submitStatus?.type === 'loading'}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: submitStatus?.type === 'loading' ? '#95A5A6' : '#3498DB',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '16px',
+              cursor: submitStatus?.type === 'loading' ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            {submitStatus?.type === 'loading' ? 'Logging...' : 'Log Food'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
