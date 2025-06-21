@@ -12,7 +12,7 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
   const commonUnits = [
     { id: 91, name: 'Cups' },
     { id: 226, name: 'Ounces' },
-    { id: 301, name: 'Packets' },
+    { id: 301, name: 'scoop' },
     { id: 17, name: 'Bar' },
     { id: 69, name: 'Container' },
     { id: 27, name: 'Container' },
@@ -81,10 +81,16 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
       setLoading(true);
       setError(null);
       
-      // Prepare the payload - send unitId as is (could be number or string)
+      // Prepare the payload - send all required fields
+      console.log('DEBUG: food object:', food);
+      console.log('DEBUG: food.time value:', food.time);
+      
       const payload = {
         amount: parseFloat(amount),
-        unitId: unitId === 'original' ? food.unit : unitId
+        unitId: unitId === 'original' ? food.unit : unitId,
+        foodId: food.foodId,
+        mealTypeId: food.mealType || food.mealTypeId,
+        date: food.time || new Date().toISOString().split('T')[0] // Use current date as fallback
       };
       
       const response = await axios.put(`http://localhost:5000/api/foods/${food.id}`, payload);

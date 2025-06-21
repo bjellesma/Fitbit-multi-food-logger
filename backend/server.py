@@ -348,9 +348,13 @@ def get_foods():
         }
         
         response = requests.get(url, headers=headers)
+        print(f"DEBUG: {description} response status: {response.status_code}")
+        print(f"DEBUG: {description} response body: {response.text}")
         
         if response.status_code == 200:
             return response.json()
+        elif response.status_code == 429:
+            return {'rate_limit': True, 'body': response.text}
         elif response.status_code == 401:
             print(f"DEBUG: Got 401 for {description}, attempting token refresh...")
             access_token, refresh_token = refresh_access_token(refresh_token)
@@ -360,15 +364,24 @@ def get_foods():
                     'Content-Type': 'application/json'
                 }
                 response = requests.get(url, headers=headers)
+                print(f"DEBUG: {description} retry response status: {response.status_code}")
+                print(f"DEBUG: {description} retry response body: {response.text}")
                 if response.status_code == 200:
                     return response.json()
+                elif response.status_code == 429:
+                    return {'rate_limit': True, 'body': response.text}
         
         return None
     
     # Get foods logged for the date
     foods_url = f"https://api.fitbit.com/1/user/-/foods/log/date/{target_date}.json"
+    print(f"DEBUG: get_foods - requesting URL: {foods_url}")
+    print(f"DEBUG: get_foods - current access_token (first 20 chars): {access_token[:20] if access_token else 'None'}...")
     foods_data = make_fitbit_request(foods_url, "foods logged")
+    print(f"DEBUG: get_foods - foods_data: {foods_data}")
     
+    if isinstance(foods_data, dict) and foods_data.get('rate_limit'):
+        return jsonify({'error': 'Fitbit API rate limit reached. Please wait and try again later.'}), 429
     if not foods_data:
         return jsonify({'error': 'Failed to fetch foods data'}), 500
     
@@ -378,6 +391,7 @@ def get_foods():
         for food in foods_data['foods']:
             foods.append({
                 'id': food.get('logId'),  # Add the log ID for deletion
+                'foodId': food.get('loggedFood', {}).get('foodId'),
                 'name': food.get('loggedFood', {}).get('name', 'Unknown'),
                 'mealType': food.get('loggedFood', {}).get('mealTypeId', 0),
                 'amount': food.get('loggedFood', {}).get('amount', 0),
@@ -500,93 +514,45 @@ def update_food(food_log_id):
     data = request.json
     amount = data.get('amount')
     unit_id = data.get('unitId')
+    food_id = data.get('foodId')
+    meal_type_id = data.get('mealTypeId')
+    date = data.get('date')
     
-    if amount is None or unit_id is None:
-        return jsonify({'error': 'Amount and unitId are required'}), 400
+    print(f"DEBUG: update_food called with food_log_id: {food_log_id}")
+    print(f"DEBUG: Request data: {data}")
     
-    def make_fitbit_request(url, payload, description):
-        """Helper function to make Fitbit API requests with token refresh handling"""
-        global access_token, refresh_token
-        
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.put(url, json=payload, headers=headers)
-        
-        if response.status_code == 200:  # Success for PUT
-            return response.json()
-        elif response.status_code == 401:
-            print(f"DEBUG: Got 401 for {description}, attempting token refresh...")
-            access_token, refresh_token = refresh_access_token(refresh_token)
-            if access_token and refresh_token:
-                headers = {
-                    'Authorization': f'Bearer {access_token}',
-                    'Content-Type': 'application/json'
-                }
-                response = requests.put(url, json=payload, headers=headers)
-                if response.status_code == 200:
-                    return response.json()
-        
-        return None
+    if None in (amount, unit_id, food_id, meal_type_id, date):
+        return jsonify({'error': 'amount, unitId, foodId, mealTypeId, and date are required'}), 400
     
-    def find_unit_id_by_name(unit_name):
-        """Helper function to find unit ID by name"""
-        global access_token, refresh_token
-        
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        units_url = "https://api.fitbit.com/1/foods/units.json"
-        response = requests.get(units_url, headers=headers)
-        
-        if response.status_code == 200:
-            units_data = response.json()
-            for unit in units_data:
-                if unit.get('name', '').lower() == unit_name.lower() or unit.get('plural', '').lower() == unit_name.lower():
-                    return unit.get('id')
-        elif response.status_code == 401:
-            # Try with refreshed token
-            access_token, refresh_token = refresh_access_token(refresh_token)
-            if access_token and refresh_token:
-                headers = {
-                    'Authorization': f'Bearer {access_token}',
-                    'Content-Type': 'application/json'
-                }
-                response = requests.get(units_url, headers=headers)
-                if response.status_code == 200:
-                    units_data = response.json()
-                    for unit in units_data:
-                        if unit.get('name', '').lower() == unit_name.lower() or unit.get('plural', '').lower() == unit_name.lower():
-                            return unit.get('id')
-        
-        return None
-    
-    # Handle unit ID or unit name
-    final_unit_id = unit_id
-    if isinstance(unit_id, str) and not unit_id.isdigit():
-        # It's a unit name, find the corresponding ID
-        found_unit_id = find_unit_id_by_name(unit_id)
-        if found_unit_id is None:
-            return jsonify({'error': f'Unit "{unit_id}" not found'}), 400
-        final_unit_id = found_unit_id
-    
-    # Update the food entry
-    update_url = f"https://api.fitbit.com/1/user/-/foods/log/{food_log_id}.json"
-    payload = {
-        'amount': amount,
-        'unitId': int(final_unit_id)
+    # Step 1: Delete the old food log
+    delete_url = f"https://api.fitbit.com/1/user/-/foods/log/{food_log_id}.json"
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
     }
+    delete_response = requests.delete(delete_url, headers=headers)
+    print(f"DEBUG: Delete response status: {delete_response.status_code}")
+    print(f"DEBUG: Delete response body: {delete_response.text}")
+    if delete_response.status_code != 204:
+        return jsonify({'error': 'Failed to delete old food log'}), 500
     
-    result = make_fitbit_request(update_url, payload, "update food")
+    # Step 2: Create a new food log
+    formatted_date = date
+    if date and len(date) > 10:
+        formatted_date = date[:10]  # Take only the date part if it includes time
     
-    if result:
-        return jsonify({'message': 'Food updated successfully', 'data': result}), 200
+    create_url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={int(food_id)}&mealTypeId={int(meal_type_id)}&unitId={int(unit_id)}&amount={float(amount)}&date={formatted_date}"
+    
+    print(f"DEBUG: Original date: {date}")
+    print(f"DEBUG: Formatted date: {formatted_date}")
+    print(f"DEBUG: Creating new food log with URL: {create_url}")
+    create_response = requests.post(create_url, headers=headers)
+    print(f"DEBUG: Create response status: {create_response.status_code}")
+    print(f"DEBUG: Create response body: {create_response.text}")
+    if create_response.status_code == 201:
+        return jsonify({'message': 'Food updated (deleted and created) successfully', 'data': create_response.json()}), 200
     else:
-        return jsonify({'error': 'Failed to update food'}), 500
+        return jsonify({'error': 'Failed to create new food log', 'details': create_response.text}), 500
 
 @app.route('/api/calories', methods=['GET'])
 def get_calories():
@@ -655,6 +621,146 @@ def get_calories():
         'net_calories': net_calories,
         'unit': 'calories'
     }), 200
+
+@app.route('/api/foods/search', methods=['GET'])
+def search_foods():
+    global access_token, refresh_token
+    
+    # Get search query from request
+    query = request.args.get('q', '').lower()
+    
+    if not query:
+        return jsonify({'error': 'Search query is required'}), 400
+    
+    def make_fitbit_request(url, description):
+        """Helper function to make Fitbit API requests with token refresh handling"""
+        global access_token, refresh_token
+        
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 401:
+            print(f"DEBUG: Got 401 for {description}, attempting token refresh...")
+            access_token, refresh_token = refresh_access_token(refresh_token)
+            if access_token and refresh_token:
+                headers = {
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json'
+                }
+                response = requests.get(url, headers=headers)
+                if response.status_code == 200:
+                    return response.json()
+        
+        return None
+    
+    # Search for foods using Fitbit API
+    foods_url = f"https://api.fitbit.com/1/foods/search.json?query={query}"
+    foods_data = make_fitbit_request(foods_url, "foods search")
+    
+    if not foods_data:
+        return jsonify({'error': 'Failed to fetch foods data'}), 500
+    
+    # Extract and format the foods
+    foods = []
+    if 'foods' in foods_data:
+        for food in foods_data['foods']:
+            # Get unit details for this food
+            unit_details = []
+            if 'units' in food:
+                # Get all units from Fitbit API to map IDs to names
+                units_url = "https://api.fitbit.com/1/foods/units.json"
+                units_response = make_fitbit_request(units_url, "units")
+                if units_response:
+                    all_units = {unit['id']: unit for unit in units_response}
+                    for unit_id in food['units']:
+                        if unit_id in all_units:
+                            unit_details.append({
+                                'id': unit_id,
+                                'name': all_units[unit_id]['name']
+                            })
+            
+            foods.append({
+                'id': food.get('foodId'),
+                'name': food.get('name', 'Unknown'),
+                'brand': food.get('brand', ''),
+                'calories': food.get('calories', 0),
+                'units': unit_details
+            })
+    
+    return jsonify({
+        'query': query,
+        'foods': foods,
+        'total': len(foods)
+    }), 200
+
+@app.route('/api/log_individual_food', methods=['POST'])
+def log_individual_food():
+    global access_token, refresh_token
+    
+    # Get request data
+    data = request.json
+    food_id = data.get('foodId')
+    meal_type = data.get('mealTypeId', 1)
+    unit_id = data.get('unitId')
+    amount = data.get('amount')
+    date_option = data.get('dateOption', 1)
+    
+    if not all([food_id, unit_id, amount]):
+        return jsonify({'error': 'foodId, unitId, and amount are required'}), 400
+    
+    # Calculate date based on option
+    if date_option == 1:
+        current_date = datetime.now().strftime('%Y-%m-%d')
+    elif date_option == 2:
+        current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    elif date_option == 3:
+        current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    elif date_option == 4:
+        current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+    else:
+        current_date = datetime.now().strftime('%Y-%m-%d')
+    
+    # Log the individual food
+    response = requests.post(
+        f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={food_id}&mealTypeId={meal_type}&unitId={unit_id}&amount={amount}&date={current_date}",
+        headers={
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+    )
+    
+    if response.status_code == 201:
+        return jsonify({
+            'message': 'Food logged successfully',
+            'date': current_date
+        }), 201
+    elif response.status_code == 401:  # Unauthorized, token might be expired
+        access_token, refresh_token = refresh_access_token(refresh_token)
+        if access_token and refresh_token:
+            response = requests.post(
+                f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={food_id}&mealTypeId={meal_type}&unitId={unit_id}&amount={amount}&date={current_date}",
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json'
+                }
+            )
+            if response.status_code == 201:
+                return jsonify({
+                    'message': 'Food logged successfully',
+                    'date': current_date
+                }), 201
+            else:
+                return jsonify({'error': f'Failed to log food: {response.json()}'}), 500
+        else:
+            return jsonify({'error': 'Failed to refresh token'}), 500
+    else:
+        return jsonify({'error': f'Failed to log food: {response.json()}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

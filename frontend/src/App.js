@@ -3,6 +3,7 @@ import axios from 'axios';
 import DatePicker from './Components/DatePicker';
 import CaloriesChart from './Components/CaloriesChart';
 import FoodLog from './Components/FoodLog';
+import FoodSearchModal from './Components/FoodSearchModal';
 
 function App() {
   const [meal, setMeal] = useState('');
@@ -10,6 +11,8 @@ function App() {
   const [dateOption, setDateOption] = useState('1');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [loggingMode, setLoggingMode] = useState('meal'); // 'meal' or 'individual'
+  const [isFoodSearchModalOpen, setIsFoodSearchModalOpen] = useState(false);
 
   // Listen for food deletion events to refresh calories chart
   useEffect(() => {
@@ -21,12 +24,18 @@ function App() {
       setRefreshTrigger(prev => prev + 1);
     };
 
+    const handleFoodAdded = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+
     window.addEventListener('foodDeleted', handleFoodDeleted);
     window.addEventListener('foodUpdated', handleFoodUpdated);
+    window.addEventListener('foodAdded', handleFoodAdded);
     
     return () => {
       window.removeEventListener('foodDeleted', handleFoodDeleted);
       window.removeEventListener('foodUpdated', handleFoodUpdated);
+      window.removeEventListener('foodAdded', handleFoodAdded);
     };
   }, []);
 
@@ -88,6 +97,14 @@ function App() {
         message: error.response?.data?.error || 'Failed to log food' 
       });
     }
+  };
+
+  const handleFoodSearchSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setSubmitStatus({ 
+      type: 'success', 
+      message: 'Individual food logged successfully!' 
+    });
   };
 
   return (
@@ -176,6 +193,52 @@ function App() {
           Log Food Entry
         </h2>
         
+        {/* Mode Toggle */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: '30px' 
+        }}>
+          <div style={{
+            display: 'inline-flex',
+            backgroundColor: '#E9ECEF',
+            borderRadius: '25px',
+            padding: '4px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setLoggingMode('meal')}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '20px',
+                border: 'none',
+                backgroundColor: loggingMode === 'meal' ? '#3498DB' : 'transparent',
+                color: loggingMode === 'meal' ? 'white' : '#6C757D',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              Predefined Meals
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoggingMode('individual')}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '20px',
+                border: 'none',
+                backgroundColor: loggingMode === 'individual' ? '#3498DB' : 'transparent',
+                color: loggingMode === 'individual' ? 'white' : '#6C757D',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              Individual Foods
+            </button>
+          </div>
+        </div>
+        
         {/* Status Message */}
         {submitStatus && (
           <div style={{
@@ -199,85 +262,119 @@ function App() {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} style={{ maxWidth: '500px', margin: '0 auto' }}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
-              What do you want to add?
-            </label>
-            <select 
-              value={meal} 
-              onChange={(e) => setMeal(e.target.value)}
+        {loggingMode === 'meal' ? (
+          <form onSubmit={handleSubmit} style={{ maxWidth: '500px', margin: '0 auto' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+                What do you want to add?
+              </label>
+              <select 
+                value={meal} 
+                onChange={(e) => setMeal(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '5px',
+                  border: '1px solid #BDC3C7',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select a meal</option>
+                <option value="1">Morning Shake</option>
+                <option value="2">Oatmeal Pie</option>
+                <option value="3">Yogurt</option>
+                <option value="4">Grapes/Carrots</option>
+                <option value="5">Soylent</option>
+                <option value="6">Granola</option>
+                <option value="7">Preworkout</option>
+                <option value="8">Post Workout</option>
+                <option value="9">Chicken and Pasta</option>
+              </select>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+                When did you eat this?
+              </label>
+              <select 
+                value={mealType} 
+                onChange={(e) => setMealType(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '5px',
+                  border: '1px solid #BDC3C7',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select meal type</option>
+                <option value="1">Breakfast</option>
+                <option value="2">Morning Snack</option>
+                <option value="3">Lunch</option>
+                <option value="4">Afternoon Snack</option>
+                <option value="5">Dinner</option>
+              </select>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
+                Select a Date
+              </label>
+              <DatePicker />
+            </div>
+            
+            <button 
+              type="submit"
+              disabled={submitStatus?.type === 'loading'}
               style={{
                 width: '100%',
-                padding: '10px',
+                padding: '12px',
+                backgroundColor: submitStatus?.type === 'loading' ? '#95A5A6' : '#3498DB',
+                color: 'white',
+                border: 'none',
                 borderRadius: '5px',
-                border: '1px solid #BDC3C7',
-                fontSize: '14px'
+                fontSize: '16px',
+                cursor: submitStatus?.type === 'loading' ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold'
               }}
             >
-              <option value="">Select a meal</option>
-              <option value="1">Morning Shake</option>
-              <option value="2">Oatmeal Pie</option>
-              <option value="3">Yogurt</option>
-              <option value="4">Grapes/Carrots</option>
-              <option value="5">Soylent</option>
-              <option value="6">Granola</option>
-              <option value="7">Preworkout</option>
-              <option value="8">Post Workout</option>
-              <option value="9">Chicken and Pasta</option>
-            </select>
-          </div>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
-              When did you eat this?
-            </label>
-            <select 
-              value={mealType} 
-              onChange={(e) => setMealType(e.target.value)}
+              {submitStatus?.type === 'loading' ? 'Logging...' : 'Log Meal'}
+            </button>
+          </form>
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ 
+              marginBottom: '20px', 
+              color: '#6C757D',
+              fontSize: '16px'
+            }}>
+              Search for and log individual food items
+            </p>
+            <button
+              onClick={() => setIsFoodSearchModalOpen(true)}
               style={{
-                width: '100%',
-                padding: '10px',
+                padding: '12px 24px',
+                backgroundColor: '#3498DB',
+                color: 'white',
+                border: 'none',
                 borderRadius: '5px',
-                border: '1px solid #BDC3C7',
-                fontSize: '14px'
+                fontSize: '16px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}
             >
-              <option value="">Select meal type</option>
-              <option value="1">Breakfast</option>
-              <option value="2">Morning Snack</option>
-              <option value="3">Lunch</option>
-              <option value="4">Afternoon Snack</option>
-              <option value="5">Dinner</option>
-            </select>
+              Search & Log Individual Food
+            </button>
           </div>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
-              Select a Date
-            </label>
-            <DatePicker />
-          </div>
-          
-          <button 
-            type="submit"
-            disabled={submitStatus?.type === 'loading'}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: submitStatus?.type === 'loading' ? '#95A5A6' : '#3498DB',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '16px',
-              cursor: submitStatus?.type === 'loading' ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            {submitStatus?.type === 'loading' ? 'Logging...' : 'Log Food'}
-          </button>
-        </form>
+        )}
       </div>
+
+      {/* Food Search Modal */}
+      <FoodSearchModal
+        isOpen={isFoodSearchModalOpen}
+        onClose={() => setIsFoodSearchModalOpen(false)}
+        onFoodSelected={handleFoodSearchSuccess}
+      />
     </div>
   );
 }

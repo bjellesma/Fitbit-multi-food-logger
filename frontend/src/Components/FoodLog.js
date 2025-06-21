@@ -44,7 +44,11 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
       setFoodsData(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch foods data');
+      if (err.response && err.response.status === 429) {
+        setError('Fitbit API rate limit reached. Please wait and try again later.');
+      } else {
+        setError('Failed to fetch foods data');
+      }
       console.error('Error fetching foods data:', err);
     } finally {
       setLoading(false);
@@ -221,7 +225,6 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
         {Object.entries(groupedFoods).map(([mealType, foods]) => (
           
           <div key={mealType} style={{ marginBottom: '20px' }}>
-            good world
             <h4 style={{ 
               color: '#34495E',
               borderBottom: '2px solid #3498DB',
