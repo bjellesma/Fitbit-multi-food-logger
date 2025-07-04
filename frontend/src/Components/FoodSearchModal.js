@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
@@ -9,7 +9,6 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
   const [selectedFood, setSelectedFood] = useState(null);
   const [amount, setAmount] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
-  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,14 +43,13 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
-    // Debounce search
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      searchFoods(searchQuery);
     }
-    searchTimeoutRef.current = setTimeout(() => {
-      searchFoods(query);
-    }, 300);
   };
 
   const handleFoodSelect = (food) => {
@@ -149,6 +147,7 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
+              onKeyPress={handleSearchKeyPress}
               style={{
                 width: '100%',
                 padding: '10px',
@@ -156,7 +155,7 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
                 border: '1px solid #BDC3C7',
                 fontSize: '14px'
               }}
-              placeholder="Enter food name..."
+              placeholder="Enter food name and press Enter to search..."
             />
           </div>
 
