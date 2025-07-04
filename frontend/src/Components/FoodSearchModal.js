@@ -84,11 +84,6 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected, selectedDate }) => {
         onFoodSelected();
       }
       
-      // Trigger calories chart refresh
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('foodAdded'));
-      }
-      
       onClose();
       
     } catch (err) {

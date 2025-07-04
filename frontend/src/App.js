@@ -14,30 +14,7 @@ function App() {
   const [loggingMode, setLoggingMode] = useState('meal'); // 'meal' or 'individual'
   const [isFoodSearchModalOpen, setIsFoodSearchModalOpen] = useState(false);
 
-  // Listen for food deletion events to refresh calories chart
-  useEffect(() => {
-    const handleFoodDeleted = () => {
-      setRefreshTrigger(prev => prev + 1);
-    };
 
-    const handleFoodUpdated = () => {
-      setRefreshTrigger(prev => prev + 1);
-    };
-
-    const handleFoodAdded = () => {
-      setRefreshTrigger(prev => prev + 1);
-    };
-
-    window.addEventListener('foodDeleted', handleFoodDeleted);
-    window.addEventListener('foodUpdated', handleFoodUpdated);
-    window.addEventListener('foodAdded', handleFoodAdded);
-    
-    return () => {
-      window.removeEventListener('foodDeleted', handleFoodDeleted);
-      window.removeEventListener('foodUpdated', handleFoodUpdated);
-      window.removeEventListener('foodAdded', handleFoodAdded);
-    };
-  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

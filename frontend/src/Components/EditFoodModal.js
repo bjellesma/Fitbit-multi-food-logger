@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
+const EditFoodModal = ({ isOpen, onClose, food, onUpdate, currentDate }) => {
   const [amount, setAmount] = useState('');
   const [unitId, setUnitId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,16 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
           // Add with a placeholder that will be handled by the backend
           allUnits.push({ id: 'original', name: food.unit });
         }
+      } else {
+        // If the original unit exists in common units, make sure we use the correct ID
+        const existingUnit = allUnits.find(unit => unit.name === food.unit);
+        if (existingUnit) {
+          // Update the existing unit to ensure it has the correct ID
+          const index = allUnits.findIndex(unit => unit.name === food.unit);
+          if (index !== -1) {
+            allUnits[index] = { id: existingUnit.id, name: existingUnit.name };
+          }
+        }
       }
     }
     
@@ -85,12 +95,33 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
       console.log('DEBUG: food object:', food);
       console.log('DEBUG: food.time value:', food.time);
       
+      // Handle unitId properly - if it's 'original', we need to find the actual unit ID
+      let finalUnitId = unitId;
+      if (unitId === 'original') {
+        // Find the unit in our units list that matches the original unit name
+        const originalUnit = units.find(u => u.name === food.unit);
+        if (originalUnit && originalUnit.id !== 'original') {
+          finalUnitId = originalUnit.id;
+        } else {
+          // If we can't find a proper ID, we'll need to handle this case
+          setError('Unable to determine unit ID for the original unit. Please select a different unit.');
+          return;
+        }
+      }
+      
+      console.log('DEBUG: Original unitId:', unitId);
+      console.log('DEBUG: Final unitId:', finalUnitId);
+      console.log('DEBUG: Food unit name:', food.unit);
+      console.log('DEBUG: Available units:', units);
+      console.log('DEBUG: Current date from food log:', currentDate);
+      console.log('DEBUG: Food time field:', food.time);
+      
       const payload = {
         amount: parseFloat(amount),
-        unitId: unitId === 'original' ? food.unit : unitId,
+        unitId: finalUnitId,
         foodId: food.foodId,
         mealTypeId: food.mealType || food.mealTypeId,
-        date: food.time || new Date().toLocaleDateString('en-CA') // Use current date as fallback in local timezone
+        date: currentDate || new Date().toLocaleDateString('en-CA') // Use the current date from the food log view
       };
       
       const response = await axios.put(`http://localhost:5000/api/foods/${food.id}`, payload);
@@ -98,11 +129,6 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
       // Trigger parent refresh
       if (onUpdate) {
         onUpdate();
-      }
-      
-      // Trigger calories chart refresh
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('foodUpdated'));
       }
       
       onClose();

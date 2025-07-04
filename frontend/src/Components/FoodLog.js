@@ -46,11 +46,6 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
       // Refresh the food data after successful deletion
       await fetchFoodsData();
       
-      // Trigger parent refresh for calories chart
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('foodDeleted'));
-      }
-      
     } catch (err) {
       console.error('Error deleting food:', err);
       alert('Failed to delete food. Please try again.');
@@ -71,10 +66,6 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
 
   const handleFoodUpdate = async () => {
     await fetchFoodsData();
-    // Trigger parent refresh for calories chart
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('foodUpdated'));
-    }
   };
 
   const getMealTypeName = (mealTypeId) => {
@@ -325,6 +316,7 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
         onClose={handleCloseEditModal}
         food={editingFood}
         onUpdate={handleFoodUpdate}
+        currentDate={selectedDate}
       />
     </>
   );

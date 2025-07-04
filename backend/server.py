@@ -403,10 +403,13 @@ def log_food():
         result = make_fitbit_api_request(url, method='POST', description=f"logging food: {entry['name']}")
         
         if result is not None:
-            clear_food_related_caches()  # Clear caches since food data changed
             logged_foods.append(entry['name'])
         else:
             failed_foods.append(f"{entry['name']}: Request failed")
+    
+    # Clear caches once after all foods are logged
+    if logged_foods:
+        clear_food_related_caches()
     
     # Return results
     if failed_foods:
@@ -523,18 +526,24 @@ def update_food(food_log_id):
     
     # Get update data from request
     data = request.json
+    print(f"[Backend] Update food request data: {data}")
+    
     amount = data.get('amount')
     unit_id = data.get('unitId')
     food_id = data.get('foodId')
     meal_type_id = data.get('mealTypeId')
     date = data.get('date')
     
+    print(f"[Backend] Parsed values - amount: {amount}, unit_id: {unit_id}, food_id: {food_id}, meal_type_id: {meal_type_id}, date: {date}")
+    
     if None in (amount, unit_id, food_id, meal_type_id, date):
         return jsonify({'error': 'amount, unitId, foodId, mealTypeId, and date are required'}), 400
     
     # Step 1: Delete the old food log
     delete_url = f"https://api.fitbit.com/1/user/-/foods/log/{food_log_id}.json"
+    print(f"[Backend] Deleting food log: {delete_url}")
     delete_success = make_fitbit_api_request(delete_url, method='DELETE', description="deleting old food log for update")
+    print(f"[Backend] Delete result: {delete_success}")
     if not delete_success:
         return jsonify({'error': 'Failed to delete old food log'}), 500
     
@@ -544,8 +553,10 @@ def update_food(food_log_id):
         formatted_date = date[:10]  # Take only the date part if it includes time
     
     create_url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={int(food_id)}&mealTypeId={int(meal_type_id)}&unitId={int(unit_id)}&amount={float(amount)}&date={formatted_date}"
+    print(f"[Backend] Creating new food log: {create_url}")
     
     create_result = make_fitbit_api_request(create_url, method='POST', description="creating new food log for update")
+    print(f"[Backend] Create result: {create_result}")
     if create_result is not None:
         clear_food_related_caches()  # Clear caches since food data changed
         return jsonify({'message': 'Food updated (deleted and created) successfully', 'data': create_result}), 200
@@ -721,10 +732,13 @@ def log_food_batch():
         result = make_fitbit_api_request(url, method='POST', description=f"logging batch food: {food.get('name', f'Food {food_id}')}")
         
         if result is not None:
-            clear_food_related_caches()  # Clear caches since food data changed
             logged_foods.append(food.get('name', f'Food {food_id}'))
         else:
             failed_foods.append(f"{food.get('name', f'Food {food_id}')}: Request failed")
+    
+    # Clear caches once after all foods are logged
+    if logged_foods:
+        clear_food_related_caches()
     
     # Return results
     if failed_foods:
