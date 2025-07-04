@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import DatePicker from './Components/DatePicker';
 import CaloriesChart from './Components/CaloriesChart';
 import FoodLog from './Components/FoodLog';
 import FoodSearchModal from './Components/FoodSearchModal';
+import CalendarPicker from './Components/CalendarPicker';
 
 function App() {
   const [meal, setMeal] = useState('');
   const [mealType, setMealType] = useState('');
-  const [dateOption, setDateOption] = useState('1');
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [loggingMode, setLoggingMode] = useState('meal'); // 'meal' or 'individual'
@@ -46,33 +46,10 @@ function App() {
       setSubmitStatus({ type: 'error', message: 'Please select both a meal and meal type' });
       return;
     }
-    // en-ca is the english canada format
-    let currentDate = new Date();
-    switch (parseInt(dateOption)) {
-      case 1:
-        currentDate = currentDate.toLocaleDateString('en-CA');
-        break;
-      case 2:
-        currentDate.setDate(currentDate.getDate() - 1);
-        currentDate = currentDate.toLocaleDateString('en-CA');
-        break;
-      case 3:
-        currentDate.setDate(currentDate.getDate() - 2);
-        currentDate = currentDate.toLocaleDateString('en-CA');
-        break;
-      case 4:
-        currentDate.setDate(currentDate.getDate() - 3);
-        currentDate = currentDate.toLocaleDateString('en-CA');
-        break;
-      default:
-        currentDate = new Date().toLocaleDateString('en-CA');
-    }
-
     const foodEntries = {
       meal: parseInt(meal),
       mealType: parseInt(mealType),
-      dateOption: parseInt(dateOption) || 1,
-      date: currentDate, // Send the actual calculated date
+      date: selectedDate, // Use the selected date directly
     };
 
     try {
@@ -137,22 +114,10 @@ function App() {
         }}>
           Select Date to View
         </h3>
-        <select 
-          value={dateOption} 
-          onChange={(e) => setDateOption(e.target.value)}
-          style={{
-            padding: '10px 15px',
-            borderRadius: '5px',
-            border: '1px solid #BDC3C7',
-            fontSize: '14px',
-            minWidth: '200px'
-          }}
-        >
-          <option value="1">Today</option>
-          <option value="2">Yesterday</option>
-          <option value="3">Two days ago</option>
-          <option value="4">Three days ago</option>
-        </select>
+        <CalendarPicker 
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
       </div>
       
       {/* Calories Chart Section */}
@@ -176,7 +141,7 @@ function App() {
         }}>
           Food Log
         </h2>
-        <FoodLog selectedDate={dateOption} refreshTrigger={refreshTrigger} />
+        <FoodLog selectedDate={selectedDate} refreshTrigger={refreshTrigger} />
       </div>
       
       {/* Food Logging Section */}
@@ -321,7 +286,10 @@ function App() {
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#2C3E50' }}>
                 Select a Date
               </label>
-              <DatePicker />
+              <CalendarPicker 
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
             </div>
             
             <button 
@@ -375,6 +343,7 @@ function App() {
         isOpen={isFoodSearchModalOpen}
         onClose={() => setIsFoodSearchModalOpen(false)}
         onFoodSelected={handleFoodSearchSuccess}
+        selectedDate={selectedDate}
       />
     </div>
   );

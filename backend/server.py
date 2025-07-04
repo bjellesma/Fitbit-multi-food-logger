@@ -435,8 +435,6 @@ def get_foods():
         # If no date provided, use server's current date (fallback)
         target_date = datetime.now().strftime('%Y-%m-%d')
     
-    print(f"[Backend] get_foods called with date_param: {date_param}, target_date: {target_date}")
-    
     # Call the cached function with the date parameter
     return get_foods_cached(target_date)
 
@@ -447,8 +445,6 @@ def get_foods_cached(target_date):
     # Get foods logged for the date
     foods_url = f"https://api.fitbit.com/1/user/-/foods/log/date/{target_date}.json"
     foods_data = make_fitbit_api_request(foods_url, method='GET', description="fetching foods logged")
-    
-    print(f"[Backend] Fitbit API response for {target_date}: {foods_data}")
     
     if not foods_data:
         return jsonify({'error': 'Failed to fetch foods data'}), 500

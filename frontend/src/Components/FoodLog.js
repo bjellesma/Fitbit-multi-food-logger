@@ -10,33 +10,10 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   const [editingFood, setEditingFood] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Convert date option to actual date using browser's local timezone
-  const getDateFromOption = (dateOption) => {
-    const today = new Date();
-    switch (parseInt(dateOption)) {
-      case 1:
-        return today.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
-      case 2:
-        today.setDate(today.getDate() - 1);
-        return today.toLocaleDateString('en-CA');
-      case 3:
-        today.setDate(today.getDate() - 2);
-        return today.toLocaleDateString('en-CA');
-      case 4:
-        today.setDate(today.getDate() - 3);
-        return today.toLocaleDateString('en-CA');
-      default:
-        return new Date().toLocaleDateString('en-CA');
-    }
-  };
-
   const fetchFoodsData = useCallback(async () => {
     try {
       setLoading(true);
-      const targetDate = getDateFromOption(selectedDate);
-      console.log('Fetching food data for date:', targetDate, 'from selectedDate:', selectedDate);
-      const response = await axios.get(`http://localhost:5000/api/foods?date=${targetDate}`);
-      console.log('API response for date', targetDate, ':', response.data);
+      const response = await axios.get(`http://localhost:5000/api/foods?date=${selectedDate}`);
       setFoodsData(response.data);
       setError(null);
     } catch (err) {
@@ -52,7 +29,6 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   }, [selectedDate]);
 
   useEffect(() => {
-    console.log('FoodLog useEffect triggered - selectedDate:', selectedDate, 'refreshTrigger:', refreshTrigger);
     if (selectedDate) {
       fetchFoodsData();
     }
@@ -124,8 +100,6 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
     return grouped;
   };
 
-  console.log('FoodLog render - loading:', loading, 'foodsData:', foodsData, 'error:', error);
-  
   if (loading) {
     return (
       <div style={{ 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
+const FoodSearchModal = ({ isOpen, onClose, onFoodSelected, selectedDate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,8 +76,7 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
         amount: parseFloat(amount),
         unitId: selectedUnit,
         mealTypeId: 1, // Default to breakfast, can be made configurable
-        dateOption: 1, // Default to today, can be made configurable
-        date: new Date().toLocaleDateString('en-CA') // Send today's date in local timezone
+        date: selectedDate || new Date().toLocaleDateString('en-CA') // Use selected date or fallback to today
       });
       
       // Trigger parent refresh
