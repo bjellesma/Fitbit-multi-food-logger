@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import EditFoodModal from './EditFoodModal';
 
@@ -30,17 +30,13 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
     }
   };
 
-  useEffect(() => {
-    if (selectedDate) {
-      fetchFoodsData();
-    }
-  }, [selectedDate, refreshTrigger]);
-
-  const fetchFoodsData = async () => {
+  const fetchFoodsData = useCallback(async () => {
     try {
       setLoading(true);
       const targetDate = getDateFromOption(selectedDate);
+      console.log('Fetching food data for date:', targetDate, 'from selectedDate:', selectedDate);
       const response = await axios.get(`http://localhost:5000/api/foods?date=${targetDate}`);
+      console.log('API response for date', targetDate, ':', response.data);
       setFoodsData(response.data);
       setError(null);
     } catch (err) {
@@ -53,7 +49,14 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
+
+  useEffect(() => {
+    console.log('FoodLog useEffect triggered - selectedDate:', selectedDate, 'refreshTrigger:', refreshTrigger);
+    if (selectedDate) {
+      fetchFoodsData();
+    }
+  }, [selectedDate, refreshTrigger, fetchFoodsData]);
 
   const handleDeleteFood = async (foodId, foodName) => {
     if (!window.confirm(`Are you sure you want to delete "${foodName}"?`)) {
@@ -121,6 +124,8 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
     return grouped;
   };
 
+  console.log('FoodLog render - loading:', loading, 'foodsData:', foodsData, 'error:', error);
+  
   if (loading) {
     return (
       <div style={{ 
