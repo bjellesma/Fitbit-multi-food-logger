@@ -32,7 +32,7 @@ def generate_tokens():
     print()
     
     # Step 1: Generate authorization URL
-    auth_url = f"https://www.fitbit.com/oauth2/authorize?response_type=code&client_id={client_id}&scope=nutrition%20activity&redirect_uri={redirect_uri}"
+    auth_url = f"https://www.fitbit.com/oauth2/authorize?response_type=code&client_id={client_id}&scope=nutrition%20activity%20weight&redirect_uri={redirect_uri}"
     
     print("1. Open this URL in your browser to authorize the app:")
     print(f"   {auth_url}")

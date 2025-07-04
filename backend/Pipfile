@@ -8,6 +8,7 @@ flask = "*"
 requests = "*"
 python-dotenv = "*"
 flask-cors = "*"
+flask-caching = "*"
 
 [dev-packages]
 

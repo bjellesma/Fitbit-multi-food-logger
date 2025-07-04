@@ -12,6 +12,84 @@ client_secret = os.getenv('CLIENTSECRET')
 
 basic_token = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
+def make_fitbit_api_request(url, method='GET', headers=None, data=None, description=''):
+    """
+    Centralized function to make Fitbit API requests with rate limiting logging
+    """
+    global access_token, refresh_token
+    
+    if headers is None:
+        headers = {}
+    
+    # Add authorization header
+    headers['Authorization'] = f'Bearer {access_token}'
+    if 'Content-Type' not in headers:
+        headers['Content-Type'] = 'application/json'
+    
+    # Make the request
+    if method.upper() == 'GET':
+        response = requests.get(url, headers=headers)
+    elif method.upper() == 'POST':
+        response = requests.post(url, headers=headers, data=data)
+    elif method.upper() == 'PUT':
+        response = requests.put(url, headers=headers, data=data)
+    elif method.upper() == 'DELETE':
+        response = requests.delete(url, headers=headers)
+    else:
+        raise ValueError(f"Unsupported HTTP method: {method}")
+    
+    # Log rate limiting information
+    rate_limit = response.headers.get('Fitbit-Rate-Limit-Limit')
+    rate_remaining = response.headers.get('Fitbit-Rate-Limit-Remaining')
+    rate_reset = response.headers.get('Fitbit-Rate-Limit-Reset')
+    
+    print(f"[Fitbit API] {description}")
+    print(f"  Rate limit: {rate_limit}")
+    print(f"  Remaining: {rate_remaining}")
+    print(f"  Reset time: {rate_reset}")
+    print(f"  Status: {response.status_code}")
+    
+    # Handle different response status codes
+    if response.status_code in [200, 201, 204]:
+        if response.status_code == 204:  # No content for DELETE
+            return True
+        return response.json()
+    elif response.status_code == 401:
+        # Token expired, try to refresh
+        print(f"[Fitbit API] Token expired, attempting refresh...")
+        access_token, refresh_token = refresh_access_token(refresh_token)
+        if access_token and refresh_token:
+            # Retry the request with new token
+            headers['Authorization'] = f'Bearer {access_token}'
+            if method.upper() == 'GET':
+                response = requests.get(url, headers=headers)
+            elif method.upper() == 'POST':
+                response = requests.post(url, headers=headers, data=data)
+            elif method.upper() == 'PUT':
+                response = requests.put(url, headers=headers, data=data)
+            elif method.upper() == 'DELETE':
+                response = requests.delete(url, headers=headers)
+            
+            # Log rate limiting info for retry
+            rate_limit = response.headers.get('Fitbit-Rate-Limit-Limit')
+            rate_remaining = response.headers.get('Fitbit-Rate-Limit-Remaining')
+            rate_reset = response.headers.get('Fitbit-Rate-Limit-Reset')
+            
+            print(f"[Fitbit API] Retry {description}")
+            print(f"  Rate limit: {rate_limit}")
+            print(f"  Remaining: {rate_remaining}")
+            print(f"  Reset time: {rate_reset}")
+            print(f"  Status: {response.status_code}")
+            
+            if response.status_code in [200, 201, 204]:
+                if response.status_code == 204:
+                    return True
+                return response.json()
+    
+    # If we get here, the request failed
+    print(f"[Fitbit API] Request failed: {response.status_code} - {response.text}")
+    return None
+
 def load_token(file_path, osvar):
     # osvar is used 
     if os.path.exists(file_path):
@@ -60,13 +138,8 @@ def refresh_access_token(refresh_token):
         return None, None
 
 def create_food(entry, access_token=access_token):
-    return requests.post(
-        f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}",
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
-        }
-    )
+    url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={entry['foodId']}&mealTypeId={entry['mealTypeId']}&unitId={entry['unitId']}&amount={entry['amount']}&date={entry['date']}"
+    return make_fitbit_api_request(url, method='POST', description=f"logging food: {entry['name']}")
 
 food_entries = []
 # Prompt the user for meal and meal type, converting the input to integers
@@ -265,19 +338,11 @@ if meal in meals:
     food_entries.extend(meals[meal])
 else:
     print(f'Input not recognized. Exiting.')
+
 for entry in food_entries:
     # Print the request data for debugging
-    response = create_food(entry=entry)
-    if response.status_code == 201:
+    result = create_food(entry=entry)
+    if result is not None:
         print(f"Logged food {entry['name']} successfully.")
-    elif response.status_code == 401:  # Unauthorized, token might be expired
-        print("Token expired, refreshing token...")
-        access_token, refresh_token = refresh_access_token(refresh_token)
-        if access_token and refresh_token:
-            response = create_food(entry=entry, access_token=access_token)
-            if response.status_code == 201:
-                print(f"Logged food {entry['name']} successfully after refreshing token.")
-            else:
-                print(f"Error logging food {entry['name']} after refreshing token: {response.content}")
     else:
-        print(f"Error logging food {entry['name']} with {current_date}: {response.content}")
+        print(f"Error logging food {entry['name']} with {current_date}")
