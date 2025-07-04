@@ -22,7 +22,8 @@ cache = Cache(app)
 
 def make_fitbit_api_request(url, method='GET', headers=None, data=None, description=''):
     """
-    Centralized function to make Fitbit API requests with rate limiting logging
+    Centralized function to make Fitbit API requests
+    after a request is made, the function will check the response headers for rate limiting information
     """
     global access_token, refresh_token
     
@@ -135,8 +136,7 @@ def get_cached_units():
         return units_cache
     
     # Fetch fresh units from API
-    units_url = "https://api.fitbit.com/1/foods/units.json"
-    units_data = make_fitbit_api_request(units_url, method='GET', description="fetching units")
+    units_data = make_fitbit_api_request("https://api.fitbit.com/1/foods/units.json", method='GET', description="fetching units")
     
     if units_data:
         units_cache = units_data
@@ -198,17 +198,22 @@ def log_food():
     meal_type = int(data.get('mealType', 0))
     date_option = int(data.get('dateOption', 1))
     
-    # Calculate date based on option
-    if date_option == 1:
-        current_date = datetime.now().strftime('%Y-%m-%d')
-    elif date_option == 2:
-        current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    elif date_option == 3:
-        current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
-    elif date_option == 4:
-        current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+    # Use provided date if available, otherwise calculate based on option
+    provided_date = data.get('date')
+    if provided_date:
+        current_date = provided_date
     else:
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        # Calculate date based on option (fallback to server timezone)
+        if date_option == 1:
+            current_date = datetime.now().strftime('%Y-%m-%d')
+        elif date_option == 2:
+            current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        elif date_option == 3:
+            current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+        elif date_option == 4:
+            current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+        else:
+            current_date = datetime.now().strftime('%Y-%m-%d')
     
     # Define the meals dictionary (same as log_food.py)
     meals = {
@@ -428,6 +433,7 @@ def get_foods():
     if date_param:
         target_date = date_param
     else:
+        # If no date provided, use server's current date (fallback)
         target_date = datetime.now().strftime('%Y-%m-%d')
     
     # Get foods logged for the date
@@ -674,17 +680,22 @@ def log_food_batch():
     if not foods:
         return jsonify({'error': 'No foods provided'}), 400
     
-    # Calculate date based on option
-    if date_option == 1:
-        current_date = datetime.now().strftime('%Y-%m-%d')
-    elif date_option == 2:
-        current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    elif date_option == 3:
-        current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
-    elif date_option == 4:
-        current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+    # Use provided date if available, otherwise calculate based on option
+    provided_date = data.get('date')
+    if provided_date:
+        current_date = provided_date
     else:
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        # Calculate date based on option (fallback to server timezone)
+        if date_option == 1:
+            current_date = datetime.now().strftime('%Y-%m-%d')
+        elif date_option == 2:
+            current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        elif date_option == 3:
+            current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+        elif date_option == 4:
+            current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+        else:
+            current_date = datetime.now().strftime('%Y-%m-%d')
     
     logged_foods = []
     failed_foods = []
@@ -739,17 +750,22 @@ def log_individual_food():
     if not all([food_id, unit_id, amount]):
         return jsonify({'error': 'foodId, unitId, and amount are required'}), 400
     
-    # Calculate date based on option
-    if date_option == 1:
-        current_date = datetime.now().strftime('%Y-%m-%d')
-    elif date_option == 2:
-        current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    elif date_option == 3:
-        current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
-    elif date_option == 4:
-        current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+    # Use provided date if available, otherwise calculate based on option
+    provided_date = data.get('date')
+    if provided_date:
+        current_date = provided_date
     else:
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        # Calculate date based on option (fallback to server timezone)
+        if date_option == 1:
+            current_date = datetime.now().strftime('%Y-%m-%d')
+        elif date_option == 2:
+            current_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        elif date_option == 3:
+            current_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+        elif date_option == 4:
+            current_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+        else:
+            current_date = datetime.now().strftime('%Y-%m-%d')
     
     # Log the individual food
     url = f"https://api.fitbit.com/1/user/-/foods/log.json?foodId={food_id}&mealTypeId={meal_type}&unitId={unit_id}&amount={amount}&date={current_date}"

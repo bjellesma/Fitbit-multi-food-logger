@@ -90,7 +90,7 @@ const EditFoodModal = ({ isOpen, onClose, food, onUpdate }) => {
         unitId: unitId === 'original' ? food.unit : unitId,
         foodId: food.foodId,
         mealTypeId: food.mealType || food.mealTypeId,
-        date: food.time || new Date().toISOString().split('T')[0] // Use current date as fallback
+        date: food.time || new Date().toLocaleDateString('en-CA') // Use current date as fallback in local timezone
       };
       
       const response = await axios.put(`http://localhost:5000/api/foods/${food.id}`, payload);

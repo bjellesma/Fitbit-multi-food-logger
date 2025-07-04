@@ -46,32 +46,33 @@ function App() {
       setSubmitStatus({ type: 'error', message: 'Please select both a meal and meal type' });
       return;
     }
-    
+    // en-ca is the english canada format
     let currentDate = new Date();
     switch (parseInt(dateOption)) {
       case 1:
-        currentDate = currentDate.toISOString().split('T')[0];
+        currentDate = currentDate.toLocaleDateString('en-CA');
         break;
       case 2:
         currentDate.setDate(currentDate.getDate() - 1);
-        currentDate = currentDate.toISOString().split('T')[0];
+        currentDate = currentDate.toLocaleDateString('en-CA');
         break;
       case 3:
         currentDate.setDate(currentDate.getDate() - 2);
-        currentDate = currentDate.toISOString().split('T')[0];
+        currentDate = currentDate.toLocaleDateString('en-CA');
         break;
       case 4:
         currentDate.setDate(currentDate.getDate() - 3);
-        currentDate = currentDate.toISOString().split('T')[0];
+        currentDate = currentDate.toLocaleDateString('en-CA');
         break;
       default:
-        currentDate = new Date().toISOString().split('T')[0];
+        currentDate = new Date().toLocaleDateString('en-CA');
     }
 
     const foodEntries = {
       meal: parseInt(meal),
       mealType: parseInt(mealType),
       dateOption: parseInt(dateOption) || 1,
+      date: currentDate, // Send the actual calculated date
     };
 
     try {

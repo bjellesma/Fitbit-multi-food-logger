@@ -10,23 +10,23 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   const [editingFood, setEditingFood] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Convert date option to actual date
+  // Convert date option to actual date using browser's local timezone
   const getDateFromOption = (dateOption) => {
     const today = new Date();
     switch (parseInt(dateOption)) {
       case 1:
-        return today.toISOString().split('T')[0];
+        return today.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
       case 2:
         today.setDate(today.getDate() - 1);
-        return today.toISOString().split('T')[0];
+        return today.toLocaleDateString('en-CA');
       case 3:
         today.setDate(today.getDate() - 2);
-        return today.toISOString().split('T')[0];
+        return today.toLocaleDateString('en-CA');
       case 4:
         today.setDate(today.getDate() - 3);
-        return today.toISOString().split('T')[0];
+        return today.toLocaleDateString('en-CA');
       default:
-        return new Date().toISOString().split('T')[0];
+        return new Date().toLocaleDateString('en-CA');
     }
   };
 

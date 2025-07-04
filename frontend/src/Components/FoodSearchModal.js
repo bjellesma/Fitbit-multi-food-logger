@@ -78,7 +78,8 @@ const FoodSearchModal = ({ isOpen, onClose, onFoodSelected }) => {
         amount: parseFloat(amount),
         unitId: selectedUnit,
         mealTypeId: 1, // Default to breakfast, can be made configurable
-        dateOption: 1  // Default to today, can be made configurable
+        dateOption: 1, // Default to today, can be made configurable
+        date: new Date().toLocaleDateString('en-CA') // Send today's date in local timezone
       });
       
       // Trigger parent refresh
