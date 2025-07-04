@@ -225,13 +225,14 @@ function App() {
                 <option value="">Select a meal</option>
                 <option value="1">Morning Shake</option>
                 <option value="2">Oatmeal Pie</option>
-                <option value="3">Yogurt</option>
+                <option value="3">Yogurt/Blueberries</option>
                 <option value="4">Grapes/Carrots</option>
-                <option value="5">Soylent</option>
-                <option value="6">Granola</option>
-                <option value="7">Preworkout</option>
+                <option value="5">Celery/Peanut Butter</option>
+                <option value="6">Nuts/Banana</option>
+                <option value="7">Granola/Preworkout</option>
                 <option value="8">Post Workout</option>
                 <option value="9">Chicken and Pasta</option>
+                <option value="10">Evening Shake</option>
               </select>
             </div>
             

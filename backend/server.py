@@ -222,26 +222,18 @@ def log_food():
                 "name": 'Protein Shake',
                 "foodId": 22788636, # Protein Shake
                 "mealTypeId": meal_type,
-                "unitId": 301,    # Packets
-                "amount": 2,
-                "date": current_date
-            },
-            {
-                "name": 'Milk (1%)',
-                "foodId": 692771571, # Milk (1%)
-                "mealTypeId": meal_type,
-                "unitId": 91,    # Cups
-                "amount": 2,
+                "unitId": 301,    # scoop
+                "amount": 1,
                 "date": current_date
             },
         ],
         2: [
             {
                 "name": 'Oatmeal',
-                "foodId": 692777712, # Oatmeal
+                "foodId": 692777597,
                 "mealTypeId": meal_type,
-                "unitId": 229,    # Packets
-                "amount": 2,
+                "unitId": 91,    
+                "amount": .5,
                 "date": current_date
             },
             {
@@ -249,7 +241,7 @@ def log_food():
                 "foodId": 692772145, # Raisins
                 "mealTypeId": meal_type,
                 "unitId": 91,    # Cups
-                "amount": .5,
+                "amount": .25,
                 "date": current_date
             },
             {
@@ -257,14 +249,38 @@ def log_food():
                 "foodId": 692772244, # Unsweetened Applesauce
                 "mealTypeId": meal_type,
                 "unitId": 91,    # Cups
-                "amount": 1.5,
+                "amount": .5,
                 "date": current_date
             },
+            {
+                "name": 'Healthy Grains, Peanut Butter Whole Grain Clusters',
+                "foodId": 767757700,
+                "mealTypeId": meal_type,
+                "unitId": 91,    # Cups
+                "amount": .5,
+                "date": current_date
+            },
+            {
+                "name": 'Fish Oil Liquid Softgels',
+                "foodId": 692747679,
+                "mealTypeId": meal_type,
+                "unitId": 322,    # softgel
+                "amount": 2,
+                "date": current_date
+            },
+            {
+                "name": 'MultiVites Gummy Vitamins',
+                "foodId": 17964282,
+                "mealTypeId": meal_type,
+                "unitId": 304,    # Serving
+                "amount": 2,
+                "date": current_date
+            }
         ],
         3: [
             {
                 "name": 'Zero Sugar Yogurt',
-                "foodId": 804204232,
+                "foodId": 692045929,
                 "mealTypeId": meal_type,
                 "unitId": 69,    # Container
                 "amount": 1,
@@ -285,7 +301,7 @@ def log_food():
                 "foodId": 751876808,
                 "mealTypeId": meal_type,
                 "unitId": 148,    # Grapes
-                "amount": 15,
+                "amount": 40,
                 "date": current_date
             },
             {
@@ -299,21 +315,29 @@ def log_food():
         ],
         5: [
             {
-                "name": 'Soylent',
-                "foodId": 761395165,
+                "name": 'Peanut Butter',
+                "foodId": 692135088,
                 "mealTypeId": meal_type,
-                "unitId": 27,    # Container
-                "amount": 1,
+                "unitId": 349,    # tbsp
+                "amount": 2,
+                "date": current_date
+            },
+            {
+                "name": 'Celery',
+                "foodId": 721624116,
+                "mealTypeId": meal_type,
+                "unitId": 339,    # stick
+                "amount": 3,
                 "date": current_date
             },
         ],
         6: [
             {
-                "name": 'Protein Bar',
-                "foodId": 725735405,
+                "name": 'Dry Roasted Peanuts, Unsalted',
+                "foodId": 692767466,
                 "mealTypeId": meal_type,
-                "unitId": 17,    # Bar
-                "amount": 1,
+                "unitId": 251,    # piece
+                "amount": 18,
                 "date": current_date
             },
             {
@@ -326,6 +350,14 @@ def log_food():
             }
         ],
         7: [
+            {
+                "name": 'Protein Bar',
+                "foodId": 725735405,
+                "mealTypeId": meal_type,
+                "unitId": 17,    # Bar
+                "amount": 1,
+                "date": current_date
+            },
             {
                 "name": 'Pre Workout',
                 "foodId": 798698937,
@@ -363,14 +395,6 @@ def log_food():
                 "date": current_date
             },
             {
-                "name": 'Meat Sauce',
-                "foodId": 82544,
-                "mealTypeId": meal_type,
-                "unitId": 91,  
-                "amount": 1,
-                "date": current_date
-            },
-            {
                 "name": 'Parmasean Cheese',
                 "foodId": 752199077,
                 "mealTypeId": meal_type,
@@ -382,8 +406,26 @@ def log_food():
                 "name": 'Brocolli',
                 "foodId": 82945,
                 "mealTypeId": meal_type,
-                "unitId": 304,    # Oz
+                "unitId": 304,    # serving
                 "amount": 1,
+                "date": current_date
+            },
+        ],
+        10: [
+            {
+                "name": 'Milk (1%)',
+                "foodId": 692771571,
+                "mealTypeId": meal_type,
+                "unitId": 91,    # cups
+                "amount": 2,
+                "date": current_date
+            },
+            {
+                "name": 'Casein',
+                "foodId": 807556543,
+                "mealTypeId": meal_type,
+                "unitId": 301,    # scoop
+                "amount": 2,
                 "date": current_date
             },
         ],
@@ -463,6 +505,7 @@ def get_foods_cached(target_date):
                 'mealType': food.get('loggedFood', {}).get('mealTypeId', 0),
                 'amount': food.get('loggedFood', {}).get('amount', 0),
                 'unit': food.get('loggedFood', {}).get('unit', {}).get('name', ''),
+                'unitId': food.get('loggedFood', {}).get('unit', {}).get('id'),
                 'calories': food.get('loggedFood', {}).get('calories', 0),
                 'time': food.get('loggedFood', {}).get('logDate', '')
             })
@@ -658,6 +701,11 @@ def search_foods():
             units_map = {unit['id']: unit for unit in all_units}
         
         for food in foods_data['foods']:
+            # Print food ID to console like search_food.py
+            food_id = food.get('foodId')
+            food_name = food.get('name', 'Unknown')
+            print(f"Food ID: {food_id} - {food_name}")
+            
             # Get unit details for this food using cached data
             unit_details = []
             if 'units' in food and units_map:
@@ -669,8 +717,8 @@ def search_foods():
                         })
             
             foods.append({
-                'id': food.get('foodId'),
-                'name': food.get('name', 'Unknown'),
+                'id': food_id,
+                'name': food_name,
                 'brand': food.get('brand', ''),
                 'calories': food.get('calories', 0),
                 'units': unit_details

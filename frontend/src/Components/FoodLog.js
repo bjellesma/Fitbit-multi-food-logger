@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import EditFoodModal from './EditFoodModal';
+import FoodInfoModal from './FoodInfoModal';
 
 const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   const [foodsData, setFoodsData] = useState(null);
@@ -9,6 +10,8 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   const [deletingFood, setDeletingFood] = useState(null);
   const [editingFood, setEditingFood] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedFood, setSelectedFood] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const fetchFoodsData = useCallback(async () => {
     try {
@@ -62,6 +65,16 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setEditingFood(null);
+  };
+
+  const handleShowFoodInfo = (food) => {
+    setSelectedFood(food);
+    setIsInfoModalOpen(true);
+  };
+
+  const handleCloseInfoModal = () => {
+    setIsInfoModalOpen(false);
+    setSelectedFood(null);
   };
 
   const handleFoodUpdate = async () => {
@@ -214,8 +227,14 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
                 backgroundColor: '#F8F9FA',
                 borderRadius: '5px',
                 border: '1px solid #E9ECEF',
-                position: 'relative'
-              }}>
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#E9ECEF'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F8F9FA'}
+              onClick={() => handleShowFoodInfo(food)}
+              >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 'bold', color: '#2C3E50' }}>
                     {food.name}
@@ -237,7 +256,10 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
                     {food.calories} cal
                   </div>
                   <button
-                    onClick={() => handleEditFood(food)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditFood(food);
+                    }}
                     style={{
                       padding: '4px 8px',
                       backgroundColor: '#3498DB',
@@ -254,7 +276,10 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDeleteFood(food.id, food.name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFood(food.id, food.name);
+                    }}
                     disabled={deletingFood === food.id}
                     style={{
                       padding: '4px 8px',
@@ -317,6 +342,13 @@ const FoodLog = ({ selectedDate, refreshTrigger = 0 }) => {
         food={editingFood}
         onUpdate={handleFoodUpdate}
         currentDate={selectedDate}
+      />
+
+      {/* Food Info Modal */}
+      <FoodInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={handleCloseInfoModal}
+        food={selectedFood}
       />
     </>
   );

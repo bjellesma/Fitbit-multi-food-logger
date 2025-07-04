@@ -104,3 +104,17 @@ If you get a 401 error or "Refresh token invalid" message, your tokens have expi
    ```
 
 The script will automatically save new tokens to the correct files and you can immediately test your endpoints again.
+
+## CLI
+
+### search for food
+
+```bash
+python3 search_food.py
+```
+
+### log food
+
+```bash
+python3 log_food.py
+```

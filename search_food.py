@@ -55,93 +55,31 @@ refresh_token_data = load_token('refresh_token.json', 'REFRESHTOKEN')
 access_token = access_token_data['access_token']
 refresh_token = refresh_token_data['refresh_token']
 
-def make_fitbit_api_request(url, method='GET', headers=None, data=None, description=''):
-    """
-    Centralized function to make Fitbit API requests with rate limiting logging
-    """
-    global access_token, refresh_token
-    
-    if headers is None:
-        headers = {}
-    
-    # Add authorization header
-    headers['Authorization'] = f'Bearer {access_token}'
-    if 'Content-Type' not in headers:
-        headers['Content-Type'] = 'application/json'
-    
-    # Make the request
-    if method.upper() == 'GET':
-        response = requests.get(url, headers=headers)
-    elif method.upper() == 'POST':
-        response = requests.post(url, headers=headers, data=data)
-    elif method.upper() == 'PUT':
-        response = requests.put(url, headers=headers, data=data)
-    elif method.upper() == 'DELETE':
-        response = requests.delete(url, headers=headers)
-    else:
-        raise ValueError(f"Unsupported HTTP method: {method}")
-    
-    # Log rate limiting information
-    rate_limit = response.headers.get('Fitbit-Rate-Limit-Limit')
-    rate_remaining = response.headers.get('Fitbit-Rate-Limit-Remaining')
-    rate_reset = response.headers.get('Fitbit-Rate-Limit-Reset')
-    
-    print(f"[Fitbit API] {description}")
-    print(f"  Rate limit: {rate_limit}")
-    print(f"  Remaining: {rate_remaining}")
-    print(f"  Reset time: {rate_reset}")
-    print(f"  Status: {response.status_code}")
-    
-    # Handle different response status codes
-    if response.status_code in [200, 201, 204]:
-        if response.status_code == 204:  # No content for DELETE
-            return True
-        return response.json()
-    elif response.status_code == 401:
-        # Token expired, try to refresh
-        print(f"[Fitbit API] Token expired, attempting refresh...")
-        access_token, refresh_token = refresh_access_token(refresh_token)
-        if access_token and refresh_token:
-            # Retry the request with new token
-            headers['Authorization'] = f'Bearer {access_token}'
-            if method.upper() == 'GET':
-                response = requests.get(url, headers=headers)
-            elif method.upper() == 'POST':
-                response = requests.post(url, headers=headers, data=data)
-            elif method.upper() == 'PUT':
-                response = requests.put(url, headers=headers, data=data)
-            elif method.upper() == 'DELETE':
-                response = requests.delete(url, headers=headers)
-            
-            # Log rate limiting info for retry
-            rate_limit = response.headers.get('Fitbit-Rate-Limit-Limit')
-            rate_remaining = response.headers.get('Fitbit-Rate-Limit-Remaining')
-            rate_reset = response.headers.get('Fitbit-Rate-Limit-Reset')
-            
-            print(f"[Fitbit API] Retry {description}")
-            print(f"  Rate limit: {rate_limit}")
-            print(f"  Remaining: {rate_remaining}")
-            print(f"  Reset time: {rate_reset}")
-            print(f"  Status: {response.status_code}")
-            
-            if response.status_code in [200, 201, 204]:
-                if response.status_code == 204:
-                    return True
-                return response.json()
-    
-    # If we get here, the request failed
-    print(f"[Fitbit API] Request failed: {response.status_code} - {response.text}")
-    return None
+headers = {
+    'Authorization': f'Bearer {access_token}'
+}
 
 query = input("Enter the food item to search for: ")
-result = make_fitbit_api_request(
+response = requests.get(
     f'https://api.fitbit.com/1/foods/search.json?query={query}',
-    method='GET',
-    description="searching foods"
+    headers=headers
 )
 
-if result:
-    for food in result['foods']:
+if response.status_code == 200:
+    res = response.json()
+    for food in res['foods']:
         print(f"Name: {food['name']} - ID: {food['foodId']} - Brand: {food['brand']} - Calories: {food['calories']} - Units: {food['units']}")
+elif response.status_code == 401:
+    print("Token expired, refreshing token...")
+    access_token, refresh_token = refresh_access_token(refresh_token)
+    if access_token and refresh_token:
+        response = requests.get(
+            f'https://api.fitbit.com/1/foods/search.json?query={query}',
+            headers=headers
+        )
+        if response.status_code == 201:
+            print(f"Name: {food['name']} - ID: {food['foodId']} - Brand: {food['brand']} - Calories: {food['calories']} - Units: {food['units']}")
+        else:
+            print(f"Error searching after refreshing token: {response.content}")
 else:
-    print("Error searching for foods")
+    print(f"Error: {response.json()}")
